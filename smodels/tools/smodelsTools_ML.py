@@ -64,8 +64,14 @@ def main():
         type=str,required=True)
     ML_xseccomputer.add_argument('-v', '--verbosity', type=str, default="info",
         help="Verbosity (debug, info, warning, error)")
+    ML_xseccomputer.add_argument('-c', '--ncpus', type=int, default=-1,
+        help="number of cores to be used simultaneously. -1 means 'all'. ")
     ML_xseccomputer.add_argument('-P', '--alltofile', action='store_true',
         help="write all LO cross sections to file")
+    ML_xseccomputer.add_argument('-q', '--query', action='store_true',
+        help="only query if there are cross sections in the file")
+    ML_xseccomputer.add_argument('-C', '--colors', action='store_true',
+        help="colored terminal output" )
     ML_xseccomputer.add_argument('-f', '--filename', required=True,
         help="SLHA file to compute cross sections for. "
         "If a directory is given, compute cross sections for all files in directory." )
@@ -135,7 +141,7 @@ def main():
         from smodels.tools import xsecComputer
         xsecComputer.main(args)
     if args.subparser_name == 'ML_xseccomputer':
-        from smodels.tools import ML_xseccomputer
+        from smodels.tools import ML_xsecComputer
         ML_xsecComputer.main(args)
     if args.subparser_name == 'slhachecker':
         from smodels.tools import slhaChecks

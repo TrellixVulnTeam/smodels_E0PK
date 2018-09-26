@@ -21,6 +21,7 @@ from sklearn.externals import joblib
 
 import os, copy
 import pyslha
+import numpy as np
 
 
 try:
@@ -35,7 +36,6 @@ class ML_XSecComputer:
         """
         :name of the model from which to get the xsecs (only IDM at present)
         """
-        logger.info("Model : %s" % model_name)
         self.model_name = self._checkModel ( model_name )
         
     def _checkSLHA ( self, slhafile ):
@@ -72,8 +72,8 @@ class ML_XSecComputer:
         lamL = d.blocks['FRBLOCK'][5]
         lam2 = d.blocks['FRBLOCK'][6]
 
-        input_ML = [MH0,MA0,MHC,lam2,lamL]
-        logger.info(input_ML.shape)
+        input_ML = np.array([MH0,MA0,MHC,lam2,lamL]).reshape(1, -1)
+        
         
         return input_ML
 
@@ -100,51 +100,62 @@ class ML_XSecComputer:
         qt_transform = joblib.load('smodels-database/ML_xsections_models/normalizer_IDM_13TeV.save')
         
         #Getting the cross sections
+        # The results are stored in xsecs, an array of 6 values : -37 37, 35 37, 36 37, -37 35, -37 36, 35 36
         for inputFile in inputFiles:
             in_param = self.read_extract_slha(inputFile)
             self.xsecs = qt_transform.inverse_transform(IDM_NN_model_13TeV.predict(in_param))
         return self.xsecs
 
-    def computeForOneFile ( self, sqrtses, inputFile, unlink,
-                            lOfromSLHA, tofile, pythiacard=None ):
-        """
-        compute the cross sections for one file.
-        :param sqrtses: list of sqrt{s} tu run pythia, as a unum (e.g. 7*TeV)
-            
-        """
-        if tofile:
-            logger.info("Computing SLHA cross section from %s, adding to "
-                        "SLHA file." % inputFile )
-            for s in sqrtses:
-                ss = s*TeV 
-                self.compute( ss, inputFile, unlink= unlink, 
-                              loFromSlha= lOfromSLHA, pythiacard=pythiacard )
-                if tofile == "all":
-                    comment = str(self.nevents)+" evts, pythia%d [pb]"%\
-                                              self.pythiaVersion
-                    self.addXSecToFile(self.loXsecs, inputFile, comment )
-                comment = str(self.nevents)+" events, [pb], pythia%d for LO"%\
-                                              self.pythiaVersion
-                self.addXSecToFile( self.xsecs, inputFile, comment)
-        else:
-            logger.info("Computing SLHA cross section from %s." % inputFile )
-            print()
-            print( "     Cross sections:" )
-            print( "=======================" )
-            for s in sqrtses:
-                ss = s*TeV 
-                self.compute( ss, inputFile, unlink=unlink, loFromSlha=lOfromSLHA )
-                for xsec in self.xsecs: 
-                    print( "%s %20s:  %.3e pb" % \
-                            ( xsec.info.label,xsec.pid,xsec.value/pb ) )
-            print()
 
-    def computeForBunch ( self, sqrtses, inputFiles, unlink, tofile):
-        """ compute xsecs for a bunch of slha files """
-        # computer = XSecComputer( order, nevents, pythiaVersion )
-        for inputFile in inputFiles:
-            logger.debug ( "computing xsec for %s" % inputFile )
-            self.computeForOneFile ( sqrtses, inputFile, unlink, tofile )
+    def computeForOneFile (self, sqrtses, inputfile, model_name) :
+        #compute the cross sections for one file.
+        #:params sqrtses: list of sqrt{s} to retrieve the cross section from the ML computer
+        logger.info("Computing SLHA cross section from %s." % inputFile )
+        print()
+        print( "     Cross sections:" )
+        print( "=======================" )
+        for s in sqrtses:
+            xsec_ML = self.compute(s,inputfile, model_name)
+    #def computeForOneFile ( self, sqrtses, inputFile, unlink,
+                            #lOfromSLHA, tofile, pythiacard=None ):
+        #"""
+        #compute the cross sections for one file.
+        #:param sqrtses: list of sqrt{s} tu run pythia, as a unum (e.g. 7*TeV)
+            
+        #"""
+        #if tofile:
+            #logger.info("Computing SLHA cross section from %s, adding to "
+                        #"SLHA file." % inputFile )
+            #for s in sqrtses:
+                #ss = s*TeV 
+                #self.compute( ss, inputFile, unlink= unlink, 
+                              #loFromSlha= lOfromSLHA, pythiacard=pythiacard )
+                #if tofile == "all":
+                    #comment = str(self.nevents)+" evts, pythia%d [pb]"%\
+                                              #self.pythiaVersion
+                    #self.addXSecToFile(self.loXsecs, inputFile, comment )
+                #comment = str(self.nevents)+" events, [pb], pythia%d for LO"%\
+                                              #self.pythiaVersion
+                #self.addXSecToFile( self.xsecs, inputFile, comment)
+        #else:
+            #logger.info("Computing SLHA cross section from %s." % inputFile )
+            #print()
+            #print( "     Cross sections:" )
+            #print( "=======================" )
+            #for s in sqrtses:
+                #ss = s*TeV 
+                #self.compute( ss, inputFile, unlink=unlink, loFromSlha=lOfromSLHA )
+                #for xsec in self.xsecs: 
+                    #print( "%s %20s:  %.3e pb" % \
+                            #( xsec.info.label,xsec.pid,xsec.value/pb ) )
+            #print()
+
+    #def computeForBunch ( self, sqrtses, inputFiles, unlink, tofile):
+        #""" compute xsecs for a bunch of slha files """
+        ## computer = XSecComputer( order, nevents, pythiaVersion )
+        #for inputFile in inputFiles:
+            #logger.debug ( "computing xsec for %s" % inputFile )
+            #self.computeForOneFile ( sqrtses, inputFile, unlink, tofile )
 
     def addXSecToFile( self, xsecs, slhafile, comment=None, complain=True):
         """
@@ -286,7 +297,6 @@ class ArgsStandardizer:
 
 
 def main(args):
-    logger.info(args)
     canonizer = ArgsStandardizer()
     setLogLevel ( args.verbosity )
     if args.query:
@@ -316,6 +326,7 @@ def main(args):
             computer.compute(sqrtses,chunk,model)
 #            computer.computeForBunch (  sqrtses, chunk, not args.keep,
 #                                args.LOfromSLHA, toFile, pythiacard=pythiacard )
+            logger.info(computer.xsecs)
             os._exit ( 0 )
         if pid > 0:
             children.append ( pid )

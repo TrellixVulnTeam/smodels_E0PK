@@ -3,7 +3,7 @@
 from __future__ import print_function
 """
 .. module:: Example
-   :synopsis: Basic main file example for using SModelS.   
+   :synopsis: Basic main file example for using SModelS.
    This file must be run under the installation folder.
 """
 """ Import basic functions (this file must be executed in the installation folder) """
@@ -25,10 +25,10 @@ def main():
     """
     Main program. Displays basic use case.
     """
-    
+
     #Define your model (list of rEven and rOdd particles)
     particlesLoader.load( 'smodels.share.models.mssm' ) #Make sure all the model particles are up-to-date
-    
+
     # Path to input file (either a SLHA or LHE file)
     slhafile = 'inputFiles/slha/lightEWinos.slha'
     lhefile = 'inputFiles/lhe/gluino_squarks.lhe'
@@ -37,7 +37,7 @@ def main():
     sigmacut = 0.01 * fb
     mingap = 5. * GeV
     maxcond = 0.2
-    
+
     # Decompose model (use slhaDecomposer for SLHA input or lheDecomposer for LHE input)
     slhaInput = True
     if slhaInput:
@@ -59,7 +59,7 @@ def main():
         el = top.elementList[n]
         print( "\t\t %i-th element from %i-th topology  = " %(n,m),el, end="" )
         print( "\n\t\t\twith final states =",el.getFinalStates(),"\n\t\t\twith cross section =",el.weight,"\n\t\t\tand masses = ",el.getMasses() )
-            
+
     # Load the experimental results to be used.
     # In this case, all results are employed.
     listOfExpRes = database.getExpResults()
@@ -85,25 +85,25 @@ def main():
         print('\n %s ' %expResult.globalInfo.id)
         for theoryPrediction in predictions:
             dataset = theoryPrediction.dataset
-            datasetID = dataset.dataInfo.dataId            
+            datasetID = dataset.dataInfo.dataId
             mass = theoryPrediction.mass
             txnames = [str(txname) for txname in theoryPrediction.txnames]
-            PIDs =  theoryPrediction.PIDs         
+            PIDs =  theoryPrediction.PIDs
             print( "------------------------" )
             print( "Dataset = ",datasetID )   #Analysis name
-            print( "TxNames = ",txnames )  
+            print( "TxNames = ",txnames )
             print( "Prediction Mass = ",mass )   #Value for average cluster mass (average mass of the elements in cluster)
             print( "Prediction PIDs = ",PIDs )   #Value for average cluster mass (average mass of the elements in cluster)
             print( "Theory Prediction = ",theoryPrediction.xsection )  #Signal cross section
             print( "Condition Violation = ",theoryPrediction.conditions ) #Condition violation values
-              
+
             # Get the corresponding upper limit:
             print( "UL for theory prediction = ",theoryPrediction.upperLimit )
 
             # Compute the r-value
             r = theoryPrediction.getRValue()
             print( "r = ",r )
-            
+
             # Compute likelihhod and chi^2 for EM-type results:
             if dataset.dataInfo.dataType == 'efficiencyMap':
                 theoryPrediction.computeStatistics()
@@ -112,26 +112,26 @@ def main():
             # Check condition violation
             exceedsMaxCond = False
             CondViolation = theoryPrediction.getmaxCondition()
-            if CondViolation == 'N/A' or CondViolation == None: 
+            if CondViolation == 'N/A' or CondViolation == None:
                 print( "no condition violation" )
-            elif CondViolation <= maxcond: 
+            elif CondViolation <= maxcond:
                 print( "Condition violation = ", CondViolation, " (OK)" )
-            else: 
+            else:
                 print( "Condition violation ", CondViolation, " exceeds chosen bound of ", maxcond )
                 exceedsMaxCond=True
-                     
-            # determine rmax              
+
+            # determine rmax
             if r > rmax and exceedsMaxCond == False:
                 rmax = r
                 bestResult = expResult.globalInfo.id
-            
+
     # Print the most constraining experimental result
     print( "\nThe largest r-value (theory/upper limit ratio) is ",rmax )
     if rmax > 1.:
         print( "(The input model is likely excluded by %s)" %bestResult )
     else:
         print( "(The input model is not excluded by the simplified model results)" )
-      
+
     #Find out missing topologies for sqrts=13*TeV:
     uncovered = coverage.Uncovered(toplist,sqrts=13.*TeV)
     #Print uncovered cross-sections:
@@ -139,7 +139,7 @@ def main():
     print( "Total cross section where we are outside the mass grid (fb): %10.3E\n" %(uncovered.getOutOfGridXsec()) )
     print( "Total cross section in long cascade decays (fb): %10.3E\n" %(uncovered.getLongCascadeXsec()) )
     print( "Total cross section in decays with asymmetric branches (fb): %10.3E\n" %(uncovered.getAsymmetricXsec()) )
-    
+
     #Print some of the missing topologies:
     print( 'Missing topologies (up to 3):' )
     for topo in uncovered.missingTopos.topos[:3]:
@@ -147,7 +147,7 @@ def main():
         print( 'Contributing elements (up to 2):' )
         for el in topo.contributingElements[:2]:
             print( el,'cross-section (fb):', el.missingX )
-    
+
     #Print elements with long cascade decay:
     print( '\nElements outside the grid (up to 2):' )
     for topo in uncovered.outsideGrid.topos[:2]:
@@ -156,7 +156,7 @@ def main():
         for el in topo.contributingElements[:4]:
             print( el,'cross-section (fb):', el.missingX )
             print( '\tmass:',el.getMasses() )
-        
-        
+
+
 if __name__ == '__main__':
     main()

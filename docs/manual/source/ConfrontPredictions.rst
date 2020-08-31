@@ -66,7 +66,7 @@ Likelihood Computation
 
 In the case of |EMrs|, additional statistical information
 about the constrained model can be provided by the SModelS output. 
-Most imporantly, we can compute a likelihood, 
+Most importantly, we can compute a likelihood, 
 which describes the plausibility of the data :math:`D`, given a signal strength :math:`\mu`:
 
 .. math::
@@ -80,7 +80,7 @@ effects.
 If no information about the correlation of signal regions is available 
 (or if its usage is turned off, see :doc:`Using SModelS <RunningSModelS>`), 
 we compute a simplified likelihood for the most sensitive (a.k.a. best) signal region, 
-i.e. the signal region with the highest :math:`\mbox{r_{exp}=(theory prediction)}/\mbox{(expected limit)}`, 
+i.e. the signal region with the highest :math:`r_\mathrm{exp}=(\mathrm{theory\,prediction})/(\mathrm{expected\, limit})`,
 following the procedure detailed in `CMS-NOTE-2017-001 <https://cds.cern.ch/record/2242860?ln=en>`_.
 
 This means we assume :math:`p(\theta)` to follow a Gaussian distribution centered
@@ -183,14 +183,14 @@ Figure: Comparison of exclusion curves for `CMS-PAS-SUS-16-052 <http://cms-resul
 Combination of Signal Regions - Full Likelihoods (pyhf)
 -------------------------------------------------------
 
-In early 2020, following `ATL-PHYS-PUB-2019-029 <https://cds.cern.ch/record/2684863>_`, 
+In early 2020, following `ATL-PHYS-PUB-2019-029 <https://cds.cern.ch/record/2684863>`_, 
 ATLAS has started to provide *full likelihoods* for results with full Run 2 luminosity (139/fb),  
-using a JSON serialisation of the likelihood. This JSON format describes the `HistFactory <https://cds.cern.ch/record/1456844>_` family of statistical models, which is used by the majority of ATLAS analyses. 
+using a JSON serialisation of the likelihood. This JSON format describes the `HistFactory <https://cds.cern.ch/record/1456844>`_ family of statistical models, which is used by the majority of ATLAS analyses. 
 Thus background estimates, changes under systematic variations, and observed data counts are provided at the same fidelity as used in the experiment. 
 
 SModelS supports the usage of these JSON likelihoods from v1.2.4 onward via an interface to the 
-`pyhf <https://scikit-hep.org/pyhf/>_` package, a pure-python implementation of the HistFactory statistical model. This means that for |EMr| from ATLAS, for which a JSON likelihood is available and when the combination of signal regions is turned on, the evaluation of the likelihood is relegated to `pyhf <https://scikit-hep.org/pyhf/>_`. Internally, the whole calculation 
-is based on the asymptotic formulas of *Asymptotic formulae for likelihood-based tests of new physics*, `arXiv:1007.1727 <https://arxiv.org/abs/1007.1727>_`. 
+`pyhf <https://scikit-hep.org/pyhf/>`_ package, a pure-python implementation of the HistFactory statistical model. This means that for |EMr| from ATLAS, for which a JSON likelihood is available and when the combination of signal regions is turned on, the evaluation of the likelihood is relegated to `pyhf <https://scikit-hep.org/pyhf/>`_. Internally, the whole calculation 
+is based on the asymptotic formulas of *Asymptotic formulae for likelihood-based tests of new physics*, `arXiv:1007.1727 <https://arxiv.org/abs/1007.1727>`_. 
 
 The :ref:`figure below <combinedSRfigPyhf>` examplifies how the constraints improve from 
 using the best signal region (left) to using the full likelihood (right).  

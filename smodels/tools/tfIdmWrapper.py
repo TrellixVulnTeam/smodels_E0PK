@@ -54,7 +54,7 @@ class TfIdmWrapper(WrapperBase):
 
     def run( self, slhafile ):
         """
-        Execute pythia_lhe with n events, at sqrt(s)=sqrts.
+        Regress for the given slhafile
 
         :param slhafile: input SLHA file
         :returns: List of cross sections

@@ -13,6 +13,7 @@
 from smodels.tools import pythia6Wrapper
 from smodels.tools import pythia8Wrapper
 from smodels.tools import nllFastWrapper
+from smodels.tools import tfIdmWrapper
 from smodels.tools import externalPythonTools
 from smodels.tools.smodelsLogging import logger
 from smodels.tools.colors import colors
@@ -41,6 +42,7 @@ class ToolBox(object):
         Initializes singleton instance (done only once for the entire class).
         
         """
+        # self.add(tfIdmWrapper.TfIdmWrapper())
         self.add(pythia6Wrapper.Pythia6Wrapper())
         self.add(pythia8Wrapper.Pythia8Wrapper())
         for tool in nllFastWrapper.nllFastTools.values():

@@ -73,6 +73,9 @@ class WrapperBase(object):
         if not self.maycompile:
             logger.error("Asking to compile, but auto-compilation turned off for %s", self.name )
             return
+        if not hasattr ( self, "srcPath" ):
+            logger.warning("no source path defined. wont compile" )
+            return True
         logger.debug("Trying to compile %s", self.name)
         cmd = "cd %s; make" % self.srcPath
         out = executor.getoutput(cmd)

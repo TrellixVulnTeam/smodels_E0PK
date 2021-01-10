@@ -15,7 +15,7 @@ from smodels.tools import wrapperBase
 from smodels.tools.physicsUnits import fb, TeV
 from smodels.tools.smodelsLogging import logger
 from smodels.theory import crossSection
-from smodels.theory.crossSection import NLL
+from smodels.theory.crossSection import NLO, XSection
 from smodels import installation
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 import sys, os
@@ -116,7 +116,7 @@ class XsecWrapper(WrapperBase):
         xseclist = crossSection.XSectionList()
         xsec.import_slha ( slhafile )
         ## need to add a mechanism to get rid of the frozen particles
-        ret = xsec.eval_xsection()
+        ret = xsec.eval_xsection( check_consistency = False )
         centrals = ret[0] ## central values
         for pids,central in zip(self.processes,centrals):
             mxsec = XSection()

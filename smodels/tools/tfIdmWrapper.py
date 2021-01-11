@@ -4,7 +4,7 @@
 .. module:: tfIdmWrapper
    :synopsis: Wrapper for Humberto's tensorflow based xsec regressor for the IDM model.
 
-.. moduleauthor:: Humberto Reyes <humberto.reyes-gonzalez@lpsc.in2p3.fr>
+.. moduleauthor:: Humberto Reyes-Gonzalez <humbertoalonso.reyesgonzlez@edu.unige.edu>
 
 """
 
@@ -16,6 +16,7 @@ from smodels.theory import crossSection
 from smodels.theory.crossSection import LO
 from smodels import installation
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
+from smodels.tools.IDMxsec_predictor import * 
 
 class TfIdmWrapper(WrapperBase):
     """
@@ -51,6 +52,17 @@ class TfIdmWrapper(WrapperBase):
         ret += "temp dir: %s\n" % self.tempdir
         ret += "nevents: %d\n" % self.nevents
         return ret
+      
+    def import_networks(processes):
+      import requests
+      DNNmodels={}
+      for process in processes:
+         url = 'https://github.com/hreyes91/IDMxsec/blob/main/trained_networks/'+process+'.hdf5'
+         model = requests.get(url, allow_redirects=True)
+         DNNmodels[process] = model
+      return DNNmodels         
+         
+        
 
     def run( self, slhafile ):
         """
@@ -60,6 +72,11 @@ class TfIdmWrapper(WrapperBase):
         :returns: List of cross sections
 
         """
+        processes=['3535','3536','3537','3636','3637','3737','3735','3736']
+         
+        DNNmodels=import_networks(processes) 
+        predictions=predict(slhafile,DNNmodels)
+         
         xsecs = crossSection.XSectionList()
         return xsecs
 

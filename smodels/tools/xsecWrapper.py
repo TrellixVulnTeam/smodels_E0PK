@@ -33,22 +33,30 @@ class XsecWrapper(WrapperBase):
 
     """
     def __init__( self ):
-        """
+        """ initialize the wrapper
         """
         WrapperBase.__init__(self)
         self.name = "xsec"
         self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
         ## initialize xse
+        xsec.init(data_dir="gp_dir")
+        xsec.set_energy(13000)
+        self.set_processes( "most" )
+
+
+    def set_processes ( self, mode : str ):
+        """ set the processes. mode can be either debug, most, full """
         processes = [ 
            (-2000006, 2000006), (-2000005, 2000005), (-2000004, 1000001),
            (-2000004, 1000002), (-2000004, 1000003), (-2000004, 1000004),
            (-2000004, 2000001), (-2000004, 2000002), (-2000004, 2000003),
            (-2000004, 2000004), (-2000003, 1000001), (-2000003, 1000002),
-           (-2000003, 1000003), (-2000003, 1000004), (-2000003, 2000001),
+           (-2000003, 1000003), (-2000003, 2000001),
+           # (-2000003, 1000004), (-2000002, 1000003), (-2000002, 1000004)
+           # (-2000001, 1000002), (-2000001, 1000003), (-2000001, 1000004)
            (-2000003, 2000002), (-2000003, 2000003), (-2000002, 1000001),
-           (-2000002, 1000002), (-2000002, 1000003), (-2000002, 1000004),
+           (-2000002, 1000002),
            (-2000002, 2000001), (-2000002, 2000002), (-2000001, 1000001),
-           (-2000001, 1000002), (-2000001, 1000003), (-2000001, 1000004),
            (-2000001, 2000001), (-1000006, 1000006), (-1000005, 1000005),
            (-1000004, 1000001), (-1000004, 1000002), (-1000004, 1000003),
            (-1000004, 1000004), (-1000003, 1000001), (-1000003, 1000002),
@@ -69,11 +77,25 @@ class XsecWrapper(WrapperBase):
            (2000001, 2000004), (2000002, 2000002), (2000002, 2000003),
            (2000002, 2000004), (2000003, 2000003), (2000003, 2000004),
            (2000004, 2000004)]
-        processes = [ ( 1000001, 1000001 ), ( 1000021, 1000021 ) ]
+        if mode == "most":
+            processes = [ 
+               (-2000006, 2000006), (-2000005, 2000005), (-2000004, 2000004), 
+               (-2000003, 2000003), (-2000002, 2000002), (-2000001, 2000001), 
+               (-1000006, 1000006), (-1000005, 1000005), (-1000004, 1000004), 
+               (-1000003, 1000003), (-1000002, 1000002), (-1000001, 1000001), 
+               (1000001, 1000001), (1000001, 1000002), (1000001, 1000021), 
+               (1000002, 1000002), (1000002, 1000021),
+               (1000003, 1000003), (1000003, 1000004),
+               (1000004, 1000004), (1000004, 1000021),
+               (1000004, 2000003),
+               (1000021, 1000021), (1000021, 2000001),
+               (1000021, 2000002), (1000021, 2000003), (1000021, 2000004),
+               (2000001, 2000001), (2000001, 2000002), 
+               (2000002, 2000002), (2000003, 2000003), (2000003, 2000004),
+               (2000004, 2000004)]
+        if mode == "debug":
+            processes = [ ( 1000001, 1000001 ), ( 1000021, 1000021 ) ]
         self.processes = processes
-        xsec.init(data_dir="gp_dir")
-        xsec.set_energy(13000)
-
         xsec.load_processes ( processes )
 
     def download ( self ):
@@ -116,7 +138,7 @@ class XsecWrapper(WrapperBase):
         xseclist = crossSection.XSectionList()
         xsec.import_slha ( slhafile )
         ## need to add a mechanism to get rid of the frozen particles
-        ret = xsec.eval_xsection( check_consistency = False )
+        ret = xsec.eval_xsection( verbose=0, check_consistency = False )
         centrals = ret[0] ## central values
         for pids,central in zip(self.processes,centrals):
             mxsec = XSection()
@@ -136,5 +158,6 @@ if __name__ == "__main__":
     slhafile = os.environ["HOME"]+"/git/smodels/inputFiles/slha/simplyGluino.slha"
     slhapath = os.path.join ( installation.installDirectory(), slhafile )
     xsec = tool.run( slhapath )
-    isok = abs ( xsec[0].value.asNumber ( fb ) - 2.80E+02  ) < 1e-5
+    print ( xsec[0] )
+    isok = abs ( xsec[0].value.asNumber ( fb ) - 4.19e-06  ) < 1e-5
     print("[xsecWrapper] run: " + wrapperBase.ok (isok) )

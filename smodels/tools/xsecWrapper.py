@@ -39,9 +39,9 @@ class XsecWrapper(WrapperBase):
         self.name = "xsec"
         self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
         ## initialize xse
-        xsec.init(data_dir="gp_dir")
+        xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
-        self.set_processes( "most" )
+        self.set_processes( "debug" )
 
 
     def set_processes ( self, mode : str ):
@@ -139,14 +139,14 @@ class XsecWrapper(WrapperBase):
         xsec.import_slha ( slhafile )
         ## need to add a mechanism to get rid of the frozen particles
         ret = xsec.eval_xsection( verbose=0, check_consistency = False )
-        centrals = ret[0] ## central values
+        centrals = ret[0]*10e-3 ## central values, from fb to pb
         for pids,central in zip(self.processes,centrals):
             mxsec = XSection()
             mxsec.info.sqrts = 13
             mxsec.info.order = NLO
-            mxsec.info.label = "13 TeV (NLL)"
+            mxsec.info.label = "13 TeV (NLO)"
             mxsec.pid = pids
-            mxsec.value = central * fb
+            mxsec.value = central * pb
             xseclist.add ( mxsec )
         return xseclist
         
@@ -159,5 +159,5 @@ if __name__ == "__main__":
     slhapath = os.path.join ( installation.installDirectory(), slhafile )
     xsec = tool.run( slhapath )
     print ( xsec[0] )
-    isok = abs ( xsec[0].value.asNumber ( fb ) - 4.19e-06  ) < 1e-5
+    isok = abs ( xsec[0].value.asNumber ( pb ) - 4.19e-06  ) < 1e-5
     print("[xsecWrapper] run: " + wrapperBase.ok (isok) )

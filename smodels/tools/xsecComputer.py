@@ -315,6 +315,8 @@ class XSecComputer:
                             ( xsec.info.label,xsec.pid,xsec.value/pb ) )
             print()
         return nXSecs
+   
+   
 
     def computeForBunch ( self, sqrtses, inputFiles, unlink,
                           lOfromSLHA, tofile, pythiacard=None,
@@ -529,6 +531,18 @@ class ArgsStandardizer:
         else:
             logger.info ( "We run on %d cpus" % ncpus )
         return ncpus
+   
+    def XsecToolforMSSM(args):
+      MSSMxsectool='Pythia'
+      
+      if hasattr(args, 'Xsec' ) and args.Xsec == True:        
+         xsectool='Xsec'
+         if (hasattr(args, 'pythia8') and args.pythia8 == True) or hasattr(args, 'pythia6' ) and args.pythia6 == True:
+                logger.error ( "cannot both use pythia and Xsec at same time for MSSM xsecs." )
+                sys.exit()
+      return MSSMxsectool
+         
+         
 
     def getPythiaVersion ( self, args ):
         pythiaVersion = 8
@@ -550,23 +564,9 @@ class ArgsStandardizer:
                               "--alltofile" )
             toFile="all"
         return toFile
-
-def main(args):
-    canonizer = ArgsStandardizer()
-    setLogLevel ( args.verbosity )
-    if not hasattr ( args, "noautocompile" ):
-        args.noautocompile = False
-    if args.query:
-        return canonizer.queryCrossSections ( args.filename )
-    if args.colors:
-        from smodels.tools.colors import colors
-        colors.on = True
-    sqrtses = canonizer.getSqrtses ( args )
-    order = canonizer.getOrder ( args )
-    canonizer.checkAllowedSqrtses ( order, sqrtses )
-    inputFiles = canonizer.getInputFiles ( args )
-    ncpus = canonizer.checkNCPUs ( args.ncpus, inputFiles )
-    pythiaVersion = canonizer.getPythiaVersion ( args )
+   
+def PythiaComputer(args,sqrtses,ncpus,order,inputFiles):
+   pythiaVersion = canonizer.getPythiaVersion ( args )
     ssmultipliers = None
     if hasattr ( args, "ssmultipliers" ):
         ssmultipliers = canonizer.getSSMultipliers ( args.ssmultipliers )
@@ -607,3 +607,29 @@ def main(args):
         r = os.waitpid ( child, 0 )
         logger.debug ( "child %d terminated: %s" % (child,r) )
     logger.debug ( "all children terminated." )
+   
+
+def main(args):
+    canonizer = ArgsStandardizer()
+    setLogLevel ( args.verbosity )
+    if not hasattr ( args, "noautocompile" ):
+        args.noautocompile = False
+    if args.query:
+        return canonizer.queryCrossSections ( args.filename )
+    if args.colors:
+        from smodels.tools.colors import colors
+        colors.on = True
+    sqrtses = canonizer.getSqrtses ( args )
+    order = canonizer.getOrder ( args )
+    canonizer.checkAllowedSqrtses ( order, sqrtses )
+    inputFiles = canonizer.getInputFiles ( args )
+    ncpus = canonizer.checkNCPUs ( args.ncpus, inputFiles )
+   
+    if XsecToolforMSSM=='Pythia':
+         PythiaComputer(args,sqrtses,ncpus,order,inputFiles)
+         
+   
+   
+   
+   
+

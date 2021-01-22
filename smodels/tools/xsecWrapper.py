@@ -36,12 +36,13 @@ class XsecWrapper(WrapperBase):
         """ initialize the wrapper
         """
         WrapperBase.__init__(self)
-        self.name = "xsec"
+        self.name = "Xsec"
         self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
-        ## initialize xse
+        ## initialize xsec
         xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
         self.set_processes( "debug" )
+        self.download()
 
 
     def set_processes ( self, mode : str ):
@@ -100,9 +101,13 @@ class XsecWrapper(WrapperBase):
 
     def download ( self ):
         """ download the data files """
-        cmd = "xsec-download-gprocs -g gp_dir -t all"
-        import subprocess
-        subprocess.getoutput ( cmd )
+        
+        if os.path.isdir('./gp_dir')==False:
+            cmd = "xsec-download-gprocs -g gp_dir -t all"
+            print("Xsec trained models not found. Downloading them...")
+            import subprocess
+            subprocess.getoutput ( cmd )
+            print("Done")
 
     def checkFileExists(self, inputFile):
         """
@@ -140,6 +145,8 @@ class XsecWrapper(WrapperBase):
         ## need to add a mechanism to get rid of the frozen particles
         ret = xsec.eval_xsection( verbose=0, check_consistency = False )
         centrals = ret[0]*10e-3 ## central values, from fb to pb
+        lower_uncertainty_list=ret[1].tolist()*10e-3
+        upper_uncertainty_list=ret[2].tolist()*10e-3
         for pids,central in zip(self.processes,centrals):
             mxsec = XSection()
             mxsec.info.sqrts = 13
@@ -148,7 +155,7 @@ class XsecWrapper(WrapperBase):
             mxsec.pid = pids
             mxsec.value = central * pb
             xseclist.add ( mxsec )
-        return xseclist
+        return xseclist,lower_uncertainty_list,upper_uncertainty_list
         
 if __name__ == "__main__":
     import os

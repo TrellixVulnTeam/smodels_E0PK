@@ -27,7 +27,7 @@ import sys
 
 class XSecComputer:
     """ cross section computer class, what else? """
-    def __init__ ( self, maycompile=True ):
+    def __init__ (self,xsectool, maxOrder, nevents, pythiaVersion, maycompile=True  ):
         """
         :param maxOrder: maximum order to compute the cross section, given as an integer
                     if maxOrder == LO, compute only LO pythia xsecs
@@ -39,28 +39,27 @@ class XSecComputer:
         """
         
         if xsectool not in ['Pythia','Xsec']:
-            logger.error ( "Unknown tool %s. Allowed values: 6, 8,Xsec" % \
+            logger.error ( "Unknown tool %s. Allowed values: 6, 8, Xsec" % \
                           ( xsectool ) )
             sys.exit()
         
         
         self.countNoXSecs = 0
         self.countNoNLOXSecs = 0
-        
-        self.maycompile = maycompile
-        
-    def checkPythiaorNLLfast(self,maxOrder,nevents, pythiaVersion):
-        self.maxOrder = _checkMaxOrder ( maxOrder )
-        if nevents < 1:
-            logger.error ( "Supplied nevents < 1" )
-            sys.exit()
-        self.nevents = nevents
-        if pythiaVersion not in [ 6, 8 ]:
-            logger.error ( "Unknown pythia version %s. Allowed values: 6, 8" % \
+         
+        if xsectool='Pythia-NNLfast':
+         self.maxOrder = _checkMaxOrder ( maxOrder )
+         if nevents < 1:
+               logger.error ( "Supplied nevents < 1" )
+               sys.exit()
+         self.nevents = nevents
+         if pythiaVersion not in [ 6, 8 ]:
+               logger.error ( "Unknown pythia version %s. Allowed values: 6, 8" % \
                             ( pythiaVersion ) )
-            sys.exit()
-        self.pythiaVersion = pythiaVersion
-        return
+               sys.exit()
+         self.pythiaVersion = pythiaVersion
+  
+        self.maycompile = maycompile 
             
         
 
@@ -329,7 +328,7 @@ class XSecComputer:
             print()
         return nXSecs
 
-    def XSECcomputeForOneFile ( self, sqrtses, inputFile, tofile, comment = None ):
+    def MLcomputeForOneFile ( self, inputFile, tofile ):
 
         nXSecs = 0 ## count the xsecs we are adding
         if tofile:
@@ -339,16 +338,18 @@ class XSecComputer:
     # if we were the ones writing them
         Xsectool = toolBox.ToolBox().get("Xsec")
         xsecs,lower_uncertainty_list,upper_uncertainty_list = Xsectool.run( inputFile)
-        
-        for j in range(xsecs):
-            xcomment="Xsec 1.0.2 [pb] \n # Estimated uncertainty: "+str(lower_uncertainty_list[j])+" +"+str(upper_uncertainty_list[j])
-            xsec=[xsecs[j]]
-            nXSecs += self.addXSecToFile( xsec, inputFile, xcomment, complain)
+        if xsecs==None:
+         logger.info("Input parameters in %s inconsistent with trained parameter space. Skipping cross section prediction for this point."  % inputFile )
+        else:
+         nXSecs = 0 ## count the xsecs we are adding
+         for j in range(xsecs):
+               xcomment="Xsec 1.0.2 [pb] \n # Estimated uncertainty: "+str(lower_uncertainty_list[j])+" +"+str(upper_uncertainty_list[j])
+               xsec=[xsecs[j]]
+               nXSecs += self.addXSecToFile( xsec, inputFile, xcomment, complain)
 
    
    
-
-    def computeForBunch ( self, sqrtses, inputFiles, unlink,
+   def computeForBunch ( self, sqrtses, inputFiles, unlink,
                           lOfromSLHA, tofile, pythiacard=None,
                           ssmultipliers=None   ):
         """ compute xsecs for a bunch of slha files """
@@ -356,6 +357,13 @@ class XSecComputer:
             logger.debug ( "computing xsec for %s" % inputFile )
             self.computeForOneFile ( sqrtses, inputFile, unlink, lOfromSLHA,
                       tofile, pythiacard=pythiacard, ssmultipliers = ssmultipliers )
+   
+
+    def MLcomputeForBunch ( self, inputFiles, tofile):
+        """ compute xsecs for a bunch of slha files """
+        for inputFile in inputFiles:
+            logger.debug ( "computing xsec for %s" % inputFile )
+            self.MLcomputeForOneFile (inputFile, tofile )
 
     def addCommentToFile ( self, comment, slhaFile ):
         """ add the optional comment to file """
@@ -562,8 +570,8 @@ class ArgsStandardizer:
             logger.info ( "We run on %d cpus" % ncpus )
         return ncpus
    
-    def XsecToolforMSSM(args):
-         xsectool='Pythia'
+    def whichXsecTool(args):
+         xsectool='Pythia-NNLfast'
       
       if hasattr(args, 'Xsec' ) and args.Xsec == True:        
          xsectool='Xsec'
@@ -600,7 +608,7 @@ class ArgsStandardizer:
 
 
    
-def PythiaComputer(args,sqrtses,ncpus,order,inputFiles):
+def PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool):
     pythiaVersion = canonizer.getPythiaVersion ( args )
 
     ssmultipliers = None
@@ -630,7 +638,7 @@ def PythiaComputer(args,sqrtses,ncpus,order,inputFiles):
             logger.debug ( "chunk #%d: pid %d (parent %d)." %
                        ( i, os.getpid(), os.getppid() ) )
             logger.debug ( " `-> %s" % " ".join ( chunk ) )
-            computer = XSecComputer( order, args.nevents, pythiaVersion, \
+            computer = XSecComputer( xsectool,order, args.nevents, pythiaVersion, \
                                      not args.noautocompile )
             toFile = canonizer.writeToFile ( args )
             computer.computeForBunch (  sqrtses, chunk, not args.keep,
@@ -645,16 +653,15 @@ def PythiaComputer(args,sqrtses,ncpus,order,inputFiles):
     logger.debug ( "all children terminated." )
 
 
-    def XSecComputer(args):
-
-        computer = XSecComputer( 13, None, None, \
-                                not args.noautocompile )
-
 
    
 
+def GPXsecComputer(args,inputFiles,xsectool):
 
-
+   computer = XSecComputer( xsectool,None, None, None, \
+                                     not args.noautocompile )
+   toFile = canonizer.writeToFile ( args )
+   computer.MLcomputeForBunch ( inputFiles,  toFile )
 
 
 
@@ -674,12 +681,13 @@ def main(args):
     canonizer.checkAllowedSqrtses ( order, sqrtses )
     inputFiles = canonizer.getInputFiles ( args )
     ncpus = canonizer.checkNCPUs ( args.ncpus, inputFiles )
+    xsectool=canonizer.whichXsecTool(args)      
    
-    if XsecToolforMSSM=='Pythia':
+    if xsectool=='Pythia-NNLfast':
         
-         PythiaComputer(args,sqrtses,ncpus,order,inputFiles)
-    elif XsecToolforMSSM=='Xsec':
-        XsecComputer(args,inputFiles)
+         PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool)
+    elif xsectool=='Xsec':
+        XsecComputer(args,inputFiles,xsectool)
          
    
    

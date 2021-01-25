@@ -143,18 +143,23 @@ class XsecWrapper(WrapperBase):
         xseclist = crossSection.XSectionList()
         xsec.import_slha ( slhafile )
         ## need to add a mechanism to get rid of the frozen particles
-        ret = xsec.eval_xsection( verbose=0, check_consistency = False )
-        centrals = ret[0]*10e-3 ## central values, from fb to pb
-        lower_uncertainty_list=ret[1].tolist()*10e-3
-        upper_uncertainty_list=ret[2].tolist()*10e-3
-        for pids,central in zip(self.processes,centrals):
-            mxsec = XSection()
-            mxsec.info.sqrts = 13
-            mxsec.info.order = NLO
-            mxsec.info.label = "13 TeV (NLO)"
-            mxsec.pid = pids
-            mxsec.value = central * pb
-            xseclist.add ( mxsec )
+        ret = xsec.eval_xsection( verbose=0, check_consistency = True )
+         
+        if ret==False: # or ValueError etc. CHECK type
+         xseclist,lower_uncertainty_list,upper_uncertainty_list=None
+        else: 
+         
+         centrals = ret[0]*10e-3 ## central values, from fb to pb
+         lower_uncertainty_list=ret[1].tolist()*10e-3
+         upper_uncertainty_list=ret[2].tolist()*10e-3
+         for pids,central in zip(self.processes,centrals):
+               mxsec = XSection()
+               mxsec.info.sqrts = 13
+               mxsec.info.order = NLO
+               mxsec.info.label = "13 TeV (NLO)"
+               mxsec.pid = pids
+               mxsec.value = central * pb
+               xseclist.add ( mxsec )
         return xseclist,lower_uncertainty_list,upper_uncertainty_list
         
 if __name__ == "__main__":

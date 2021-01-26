@@ -336,8 +336,8 @@ class XSecComputer:
                     "SLHA file." % inputFile )
         complain = True ## dont complain about already existing xsecs,
     # if we were the ones writing them
-        Xsectool = toolBox.ToolBox().get("Xsec")
-        xsecs,lower_uncertainty_list,upper_uncertainty_list = Xsectool.run( inputFile)
+        MLxsectool = toolBox.ToolBox().get("Xsec")
+        xsecs,lower_uncertainty_list,upper_uncertainty_list = MLxsectool.run( inputFile)
         if xsecs==None:
          logger.info("Input parameters in %s inconsistent with trained parameter space. Skipping cross section prediction for this point."  % inputFile )
         else:
@@ -656,7 +656,7 @@ def PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool):
 
    
 
-def GPXsecComputer(args,inputFiles,xsectool):
+def MLxsecComputer(args,inputFiles,xsectool):
 
    computer = XSecComputer( xsectool,None, None, None, \
                                      not args.noautocompile )
@@ -687,7 +687,7 @@ def main(args):
         
          PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool)
     elif xsectool=='Xsec':
-        XsecComputer(args,inputFiles,xsectool)
+        MLxsecComputer(args,inputFiles,xsectool)
          
    
    

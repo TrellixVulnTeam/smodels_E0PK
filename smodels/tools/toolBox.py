@@ -13,7 +13,6 @@
 from smodels.tools import pythia6Wrapper
 from smodels.tools import pythia8Wrapper
 from smodels.tools import nllFastWrapper
-from smodels.tools import tfIdmWrapper
 from smodels.tools import xsecWrapper
 from smodels.tools import externalPythonTools
 from smodels.tools.smodelsLogging import logger

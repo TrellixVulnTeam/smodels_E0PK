@@ -39,6 +39,7 @@ class XsecWrapper(WrapperBase):
         self.name = "Xsec"
         self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
         ## initialize xsec
+        
         xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
         self.set_processes( "debug" )
@@ -142,24 +143,27 @@ class XsecWrapper(WrapperBase):
         """
         xseclist = crossSection.XSectionList()
         xsec.import_slha ( slhafile )
-        ## need to add a mechanism to get rid of the frozen particles
-        ret = xsec.eval_xsection( verbose=0, check_consistency = True )
+      
          
-        if ret==False: # or ValueError etc. CHECK type
-         xseclist,lower_uncertainty_list,upper_uncertainty_list=None
-        else: 
+        try:
+            ret = xsec.eval_xsection( verbose=0, check_consistency = True )
+            centrals = ret[0]*10e-3 ## central values, from fb to pb
+            lower_uncertainty_list=ret[1].tolist()*10e-3
+            upper_uncertainty_list=ret[2].tolist()*10e-3
+            for pids,central in zip(self.processes,centrals):
+                mxsec = XSection()
+                mxsec.info.sqrts = 13
+                mxsec.info.order = NLO
+                mxsec.info.label = "13 TeV (NLO)"
+                mxsec.pid = pids
+                mxsec.value = central * pb
+                xseclist.add ( mxsec )
+    
+        except:
+            #If inputs inconsistent with trained parameter space, return None.
+            xseclist,lower_uncertainty_list,upper_uncertainty_list=None
          
-         centrals = ret[0]*10e-3 ## central values, from fb to pb
-         lower_uncertainty_list=ret[1].tolist()*10e-3
-         upper_uncertainty_list=ret[2].tolist()*10e-3
-         for pids,central in zip(self.processes,centrals):
-               mxsec = XSection()
-               mxsec.info.sqrts = 13
-               mxsec.info.order = NLO
-               mxsec.info.label = "13 TeV (NLO)"
-               mxsec.pid = pids
-               mxsec.value = central * pb
-               xseclist.add ( mxsec )
+         
         return xseclist,lower_uncertainty_list,upper_uncertainty_list
         
 if __name__ == "__main__":

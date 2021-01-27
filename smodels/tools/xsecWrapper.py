@@ -12,7 +12,7 @@
 
 from smodels.tools.wrapperBase import WrapperBase
 from smodels.tools import wrapperBase
-from smodels.tools.physicsUnits import fb, TeV
+from smodels.tools.physicsUnits import pb, TeV
 from smodels.tools.smodelsLogging import logger
 from smodels.theory import crossSection
 from smodels.theory.crossSection import NLO, XSection
@@ -40,10 +40,14 @@ class XsecWrapper(WrapperBase):
         self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
         ## initialize xsec
         
+    
+    
+    def Xsec_initializer(self):
+        'Initialize Xsec: Decompressing models and setting CoM and processes'
+        self.download()
         xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
         self.set_processes( "debug" )
-        self.download()
 
 
     def set_processes ( self, mode : str ):
@@ -143,28 +147,46 @@ class XsecWrapper(WrapperBase):
         """
         xseclist = crossSection.XSectionList()
         xsec.import_slha ( slhafile )
-      
+        mxsec = XSection()
+        mxsec.info.sqrts = 13
+        mxsec.info.order = NLO
+        mxsec.info.label = "13 TeV (NLO)"
+        print(mxsec)
          
         try:
+            
             ret = xsec.eval_xsection( verbose=0, check_consistency = True )
-            centrals = ret[0]*10e-3 ## central values, from fb to pb
-            lower_uncertainty_list=ret[1].tolist()*10e-3
-            upper_uncertainty_list=ret[2].tolist()*10e-3
+            print('hey')
+            centrals = (ret[0]*1e-3).tolist() ## central values, from fb to pb
+            lower_uncertainty_list=(ret[1]*1e-3).tolist()
+            upper_uncertainty_list=(ret[2]*1e-3).tolist()
+            print('lower uncertainty')
+            print(lower_uncertainty_list)
+            print(len(self.processes))
             for pids,central in zip(self.processes,centrals):
+                print('hey')
+                print(pids)
+                print(central)
                 mxsec = XSection()
                 mxsec.info.sqrts = 13
                 mxsec.info.order = NLO
                 mxsec.info.label = "13 TeV (NLO)"
                 mxsec.pid = pids
+                print(mxsec)
                 mxsec.value = central * pb
+                print(mxsec)
                 xseclist.add ( mxsec )
     
         except:
             #If inputs inconsistent with trained parameter space, return None.
-            xseclist,lower_uncertainty_list,upper_uncertainty_list=None
+            xseclist,lower_uncertainty_list,upper_uncertainty_list=None,None,None
          
          
         return xseclist,lower_uncertainty_list,upper_uncertainty_list
+
+    def Xsec_finalizer():
+        """Finalize Xsec. Erase decompressed files """
+        xsec.finalise()
         
 if __name__ == "__main__":
     import os

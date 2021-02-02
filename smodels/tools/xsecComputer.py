@@ -344,9 +344,27 @@ class XSecComputer:
         else:
          nXSecs = 0 ## count the xsecs we are adding
          for j in range(len(xsecs)):
-            xcomment="Estimated uncertainty: "+str(lower_uncertainty_list[j])+" +"+str(upper_uncertainty_list[j])+", Xsec 1.0.2, [pb]"
+            #Element as list because addXsecToFile takes lists
             xsec=[xsecs[j]]
-            nXSecs += self.addXSecToFile( xsec, inputFile, xcomment, complain)
+            if j==0:
+                xcomment="Uncertainty: "+str(lower_uncertainty_list[j])+" +"+str(upper_uncertainty_list[j])+", Xsec 1.0.2, [pb]"
+                
+                nXSecs += self.addXSecToFile( xsec, inputFile, xcomment, complain=True)
+            
+            writexsec=True
+            ###Checks if cross sections already in slha file. If j=0 is checked directly addXsecToFile
+            if j==1:
+                xSectionList_old = crossSection.getXsecFromSLHAFile(inputFile)
+            if j>0:
+                for oldxsec in xSectionList_old:
+                    
+                    if oldxsec.info == xsec[0].info and set(oldxsec.pid) == set(xsec[0].pid):
+                        writexsec=False
+                        break
+            if writexsec==True and j>0:
+                xcomment="Uncertainty: "+str(lower_uncertainty_list[j])+" +"+str(upper_uncertainty_list[j])+", Xsec 1.0.2, [pb]"
+                
+                nXSecs += self.addXSecToFile( xsec, inputFile, xcomment, complain=False)
 
    
    
@@ -364,7 +382,7 @@ class XSecComputer:
         """ compute xsecs for a bunch of slha files """
         for inputFile in inputFiles:
             logger.debug ( "computing xsec for %s" % inputFile )
-            self.MLcomputeForOneFile (inputFile, tofile )
+            self.MLcomputeForOneFile (inputFile, tofile)
 
     def addCommentToFile ( self, comment, slhaFile ):
         """ add the optional comment to file """
@@ -374,7 +392,7 @@ class XSecComputer:
             logger.error("SLHA file %s not found." % slhaFile )
             raise SModelSError()
         outfile = open(slhaFile, 'a')
-        outfile.write ( "# %s\n" % comment )
+        outfile.write ( "  # %s\n" % comment )
         outfile.close()
 
     def addMultipliersToFile ( self, ssmultipliers, slhaFile ):
@@ -657,12 +675,37 @@ def PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer):
 
    
 
-def MLxsecComputer(args,inputFiles,xsectool,canonizer):
+def MLxsecComputer(args,inputFiles,xsectool,ncpus,canonizer):
 
-   computer = XSecComputer( xsectool,None, None, None, \
+    MLxsectool = toolBox.ToolBox().get("Xsec")
+    MLxsectool.Xsec_initializer()
+
+    children = []
+    for i in range(ncpus):
+        pid = os.fork()
+        chunk = inputFiles [ i::ncpus ]
+        if pid < 0:
+            logger.error ( "fork did not succeed! Pid=%d" % pid )
+            sys.exit()
+        if pid == 0:
+            logger.debug ( "chunk #%d: pid %d (parent %d)." %
+                       ( i, os.getpid(), os.getppid() ) )
+            logger.debug ( " `-> %s" % " ".join ( chunk ) )
+            computer = XSecComputer( xsectool,None, None, None, \
                                      not args.noautocompile )
-   toFile = canonizer.writeToFile ( args )
-   computer.MLcomputeForBunch ( inputFiles,  toFile )
+            toFile = canonizer.writeToFile ( args )
+            computer.MLcomputeForBunch ( chunk,  toFile )
+            os._exit ( 0 )
+        if pid > 0:
+            children.append ( pid )
+    for child in children:
+        r = os.waitpid ( child, 0 )
+        logger.debug ( "child %d terminated: %s" % (child,r) )
+    logger.debug ( "all children terminated." )
+    
+    MLxsectool.Xsec_finalizer()
+
+   
 
 
 
@@ -688,7 +731,7 @@ def main(args):
         
          PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer)
     elif xsectool=='Xsec':
-        MLxsecComputer(args,inputFiles,xsectool,canonizer)
+        MLxsecComputer(args,inputFiles,xsectool,ncpus,canonizer)
          
    
    

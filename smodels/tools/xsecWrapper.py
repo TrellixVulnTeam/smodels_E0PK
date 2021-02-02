@@ -47,7 +47,7 @@ class XsecWrapper(WrapperBase):
         self.download()
         xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
-        self.set_processes( "debug" )
+        self.set_processes( "all" )
 
 
     def set_processes ( self, mode : str ):
@@ -151,30 +151,25 @@ class XsecWrapper(WrapperBase):
         mxsec.info.sqrts = 13
         mxsec.info.order = NLO
         mxsec.info.label = "13 TeV (NLO)"
-        print(mxsec)
+  
          
         try:
             
             ret = xsec.eval_xsection( verbose=0, check_consistency = True )
-            print('hey')
+
             centrals = (ret[0]*1e-3).tolist() ## central values, from fb to pb
             lower_uncertainty_list=(ret[1]*1e-3).tolist()
             upper_uncertainty_list=(ret[2]*1e-3).tolist()
-            print('lower uncertainty')
-            print(lower_uncertainty_list)
-            print(len(self.processes))
+
             for pids,central in zip(self.processes,centrals):
-                print('hey')
-                print(pids)
-                print(central)
+                
                 mxsec = XSection()
-                mxsec.info.sqrts = 13
+                mxsec.info.sqrts = 13*TeV
                 mxsec.info.order = NLO
                 mxsec.info.label = "13 TeV (NLO)"
                 mxsec.pid = pids
-                print(mxsec)
                 mxsec.value = central * pb
-                print(mxsec)
+           
                 xseclist.add ( mxsec )
     
         except:
@@ -184,7 +179,7 @@ class XsecWrapper(WrapperBase):
          
         return xseclist,lower_uncertainty_list,upper_uncertainty_list
 
-    def Xsec_finalizer():
+    def Xsec_finalizer(self):
         """Finalize Xsec. Erase decompressed files """
         xsec.finalise()
         

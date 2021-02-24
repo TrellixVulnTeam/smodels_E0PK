@@ -21,9 +21,15 @@ def run ( nb ):
         execute = " --execute"
     cmd1="%s%s --to html %s" % ( cmd, execute, nb )
     cmd2="%s --to python %s" % ( cmd, nb )
-    print ( "convert: %s" % cmd1 )
-    # subprocess.getoutput ( cmd1 )
+    #subprocess.getoutput ( cmd1 )
+    print ( "convert: %s" % cmd2 )
     subprocess.getoutput ( cmd2 )
+    cpcmd = "cp %s ../dlrecipes/" % nb
+    print ( "cp: %s" % cpcmd )
+    subprocess.getoutput ( cpcmd )
+    mvcmd = "mv %s ../dlrecipes/" % nb.replace(".ipynb",".py")
+    print ( "mv: %s" % cpcmd )
+    subprocess.getoutput ( mvcmd )
 
 for notebook in notebooks:
     m_nb = os.stat ( notebook ).st_mtime ## last modified notebook

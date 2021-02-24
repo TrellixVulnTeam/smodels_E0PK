@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon',
     'myst_nb'
 ]
 
@@ -126,6 +127,8 @@ nitpick_ignore = [('py:class', 'type'),('py:class', 'object'),('py:obj', 'data')
 # a list of builtin themes.
 html_theme = 'sphinx_rtd_theme'
 
+html_sourcelink_suffix = '' ## .rst and .ipynb, not .ipynb.txt
+
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -158,7 +161,7 @@ html_static_path = ['_static']
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-html_extra_path = [ 'dlrecipes' ]
+html_extra_path = [ 'downloads' ]
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.

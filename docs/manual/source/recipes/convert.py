@@ -24,14 +24,15 @@ def run ( nb ):
     #subprocess.getoutput ( cmd1 )
     print ( "convert: %s" % cmd2 )
     subprocess.getoutput ( cmd2 )
-    dldir = "../dlrecipes/"
+    dldir = "../downloads/"
     if not os.path.exists ( dldir ):
         os.mkdir ( dldir )
-    cpcmd = "cp %s %s" % ( nb, dldir )
-    print ( "cp: %s" % cpcmd )
-    subprocess.getoutput ( cpcmd )
-    mvcmd = "mv %s %s" % ( nb.replace(".ipynb",".py"), dldir )
-    print ( "mv: %s" % cpcmd )
+    #cpcmd = "cp %s %s" % ( nb, dldir )
+    #print ( "cp: %s" % cpcmd )
+    #subprocess.getoutput ( cpcmd )
+    mvsrc = nb.replace ( ".ipynb", ".py" )
+    mvcmd = "mv %s %s" % ( mvsrc, dldir )
+    print ( "mv: %s" % mvcmd )
     subprocess.getoutput ( mvcmd )
 
 for notebook in notebooks:

@@ -24,10 +24,13 @@ def run ( nb ):
     #subprocess.getoutput ( cmd1 )
     print ( "convert: %s" % cmd2 )
     subprocess.getoutput ( cmd2 )
-    cpcmd = "cp %s ../dlrecipes/" % nb
+    dldir = "../dlrecipes/"
+    if not os.path.exists ( dldir ):
+        os.mkdir ( dldir )
+    cpcmd = "cp %s %s" % ( nb, dldir )
     print ( "cp: %s" % cpcmd )
     subprocess.getoutput ( cpcmd )
-    mvcmd = "mv %s ../dlrecipes/" % nb.replace(".ipynb",".py")
+    mvcmd = "mv %s %s" % ( nb.replace(".ipynb",".py"), dldir )
     print ( "mv: %s" % cpcmd )
     subprocess.getoutput ( mvcmd )
 

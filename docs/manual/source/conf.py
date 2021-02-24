@@ -48,6 +48,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
+    'myst_nb'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -157,7 +158,7 @@ html_static_path = ['_static']
 # Add any extra paths that contain custom files (such as robots.txt or
 # .htaccess) here, relative to this directory. These files are copied
 # directly to the root of the documentation.
-html_extra_path = ['recipes']
+html_extra_path = [] # 'recipes']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -281,5 +282,8 @@ autoclass_content = 'both'
 
 nitpicky = True
 
+execution_timeout = -1
+
 #Run make whenever sphinx is built:
+# os.system("cd .. && make update_code copy_files recipes RstFilesFromHelp")
 os.system("cd .. && make update_code copy_files recipes RstFilesFromHelp")

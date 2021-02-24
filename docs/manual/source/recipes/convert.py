@@ -22,7 +22,7 @@ def run ( nb ):
     cmd1="%s%s --to html %s" % ( cmd, execute, nb )
     cmd2="%s --to python %s" % ( cmd, nb )
     print ( "convert: %s" % cmd1 )
-    subprocess.getoutput ( cmd1 )
+    # subprocess.getoutput ( cmd1 )
     subprocess.getoutput ( cmd2 )
 
 for notebook in notebooks:

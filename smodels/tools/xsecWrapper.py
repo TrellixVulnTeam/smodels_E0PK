@@ -42,15 +42,15 @@ class XsecWrapper(WrapperBase):
         
     
     
-    def Xsec_initializer(self):
-        'Initialize Xsec: Decompressing models and setting CoM and processes'
+    def initialize(self):
+        """Initialize Xsec: Decompressing models and setting CoM and processes"""
         self.download()
         xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
         xsec.set_energy(13000)
-        self.set_processes( "all" )
+        self.setProcesses( "all" )
 
 
-    def set_processes ( self, mode : str ):
+    def setProcesses ( self, mode : str ):
         """ set the processes. mode can be either debug, most, full """
         processes = [ 
            (-2000006, 2000006), (-2000005, 2000005), (-2000004, 1000001),
@@ -179,7 +179,7 @@ class XsecWrapper(WrapperBase):
          
         return xseclist,lower_uncertainty_list,upper_uncertainty_list
 
-    def Xsec_finalizer(self):
+    def finalize(self):
         """Finalize Xsec. Erase decompressed files """
         xsec.finalise()
         

@@ -34,7 +34,7 @@ class XSecTest(unittest.TestCase):
         """ test the computation of LO cross section, pythia6 """
         self.logger.info ( "test LO xsecs @ 8 TeV" )
         slhafile= "./testFiles/slha/simplyGluino.slha"
-        computer = xsecComputer.XSecComputer ( LO, 2000, 6 )
+        computer = xsecComputer.XSecComputer ( 'Pythia-NNLfast',LO, 2000, 6 )
         w = computer.compute(8*TeV, slhafile ).getDictionary()
         # print ( w )
         w8lo= w[(1000021, 1000021)]['8 TeV (LO)'].asNumber( fb )
@@ -44,7 +44,7 @@ class XSecTest(unittest.TestCase):
         """ test the computation of NLL cross section """
         self.logger.info ( "test NLL xsecs @ 8 TeV" )
         slhafile="./testFiles/slha/simplyGluino.slha"
-        computer = xsecComputer.XSecComputer ( NLL, 2000, 6 )
+        computer = xsecComputer.XSecComputer ( 'Pythia-NNLfast',NLL, 2000, 6 )
         w = computer.compute( 8*TeV, slhafile ).getDictionary()
         w8nll= w[(1000021, 1000021)]['8 TeV (NLO+NLL)'].asNumber( fb )
         self.assertAlmostEqual(w8nll / 573., 1., 2 )
@@ -53,7 +53,7 @@ class XSecTest(unittest.TestCase):
         """ test the computation of LO cross section, pythia6 """
         self.logger.info ( "test LO xsecs @ 13 TeV" )
         slhafile="./testFiles/slha/simplyGluino.slha"
-        computer = xsecComputer.XSecComputer ( LO, 3000, 6 )
+        computer = xsecComputer.XSecComputer ( 'Pythia-NNLfast',LO, 3000, 6 )
         w = computer.compute( 13*TeV, slhafile ).getDictionary()
         w13lo= w[(1000021, 1000021)]['13 TeV (LO)'].asNumber( fb )
         self.assertAlmostEqual(w13lo / 2237., 1., 1 )
@@ -62,15 +62,27 @@ class XSecTest(unittest.TestCase):
         """ test the computation of NLL cross section with pythia6 """
         self.logger.info ( "test NLL xsecs @ 13 TeV" )
         slhafile="./testFiles/slha/simplyGluino.slha"
-        computer = xsecComputer.XSecComputer ( NLL, 3000, 6 )
+        computer = xsecComputer.XSecComputer ( 'Pythia-NNLfast',NLL, 3000, 6 )
         w = computer.compute( 13*TeV, slhafile ).getDictionary()
         w13nll= w[(1000021, 1000021)]['13 TeV (NLO+NLL)'].asNumber( fb )
         self.assertAlmostEqual(w13nll / 4320. , 1., 2 )
         
+    def testMLXsec(self):
+        """ test the computation of NLO SUSY strong cross sections with Xsec """
+        self.logger.info ( "test Xsec interface" )
+        slhafile="./testFiles/slha/simplyGluino.slha"
+        MLxsectool = toolBox.ToolBox().get("Xsec")
+        MLxsectool.initialize()
+        computer = xsecComputer.XSecComputer ( 'Xsec',None, None, None )
+        computer.computeForOneFileML ( slhafile,  True )
+        print('hello')
+        MLxsectool.finalize()
+
+        
     def testXSecMain(self):
         """ test the main routine for computation of LO and NLL cross section for several sqrts"""
         
-        slhafile="./testFiles/slha/simplyGluino.slha"
+        slhafile="./testFiles/slha/XsecTest.slha"
         f = open(slhafile,'r')
         fdata = f.read()
         fdata = fdata[:fdata.find('XSECTION')]
@@ -239,3 +251,4 @@ class XSecTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

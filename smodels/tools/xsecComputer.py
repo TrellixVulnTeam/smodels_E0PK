@@ -38,7 +38,7 @@ class XSecComputer:
         :param maycompile: if True, then tools can get compiled on-the-fly
         """
         
-        if xsectool not in ['Pythia','Xsec']:
+        if xsectool not in ['Pythia-NNLfast','Xsec']:
             logger.error ( "Unknown tool %s. Allowed values: 6, 8, Xsec" % \
                           ( xsectool ) )
             sys.exit()
@@ -328,7 +328,9 @@ class XSecComputer:
             print()
         return nXSecs
 
-    def MLcomputeForOneFile ( self, inputFile, tofile ):
+    def computeForOneFileML ( self, inputFile, tofile ):
+        """
+        compute the cross sections for one file with a ML trained model. """
 
         nXSecs = 0 ## count the xsecs we are adding
         if tofile:
@@ -337,7 +339,7 @@ class XSecComputer:
         complain = True ## dont complain about already existing xsecs,
     # if we were the ones writing them
         MLxsectool = toolBox.ToolBox().get("Xsec")
-        MLxsectool.Xsec_initializer()
+        MLxsectool.initialize()
         xsecs,lower_uncertainty_list,upper_uncertainty_list = MLxsectool.run( inputFile)
         if xsecs==None:
          logger.info("Input parameters in %s inconsistent with trained parameter space. Skipping cross section prediction for this point."  % inputFile )
@@ -378,11 +380,11 @@ class XSecComputer:
                       tofile, pythiacard=pythiacard, ssmultipliers = ssmultipliers )
    
 
-    def MLcomputeForBunch ( self, inputFiles, tofile):
-        """ compute xsecs for a bunch of slha files """
+    def computeForBunchML ( self, inputFiles, tofile):
+        """ compute xsecs, with an ML trained model, for a bunch of slha files """
         for inputFile in inputFiles:
             logger.debug ( "computing xsec for %s" % inputFile )
-            self.MLcomputeForOneFile (inputFile, tofile)
+            self.computeForOneFileML(inputFile, tofile)
 
     def addCommentToFile ( self, comment, slhaFile ):
         """ add the optional comment to file """
@@ -590,10 +592,20 @@ class ArgsStandardizer:
         return ncpus
    
     def whichXsecTool(self,args):
+        """ Make sure that only one xsec tool is demanded.   """
         xsectool='Pythia-NNLfast'
       
         if hasattr(args, 'Xsec' ) and args.Xsec == True:
             xsectool='Xsec'
+            if (hasattr(args, 'NLO' ) and args.NLO == True):
+                logger.warning("Only 13TeV NLO strong SUSY xsections available with xsec")
+            if (hasattr(args, 'NLL' ) and args.NLL == True):
+                logger.warning("Only 13TeV NLO strong SUSY xsections available with xsec")
+            if (hasattr(args, 'sqrts') ):
+                logger.warning("Only 13TeV NLO strong SUSY xsections available with xsec")
+            
+            
+            
             if (hasattr(args, 'pythia8') and args.pythia8 == True) or hasattr(args, 'pythia6' ) and args.pythia6 == True:
                 logger.error ( "cannot both use pythia and Xsec at same time for MSSM xsecs." )
                 sys.exit()
@@ -602,6 +614,7 @@ class ArgsStandardizer:
          
 
     def getPythiaVersion ( self, args ):
+        """ Get pythia version. Default 8. """
         pythiaVersion = 8
 
         if hasattr(args, 'pythia6' ) and args.pythia6 == True:
@@ -625,92 +638,86 @@ class ArgsStandardizer:
 
 
 
+def main(args):
 
-   
-def PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer):
-    pythiaVersion = canonizer.getPythiaVersion ( args )
+    def computeXsecsWithPyhia(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer):
+        """ Compute xsections with Pythia  """
+        pythiaVersion = canonizer.getPythiaVersion ( args )
 
-    ssmultipliers = None
-    if hasattr ( args, "ssmultipliers" ):
-        ssmultipliers = canonizer.getSSMultipliers ( args.ssmultipliers )
-        if ssmultipliers != None:
-            for pids,multiplier in ssmultipliers.items():
-                if type(pids) != tuple:
-                    logger.error ( "keys of ssmultipliers need to be supplied as tuples" )
-                    sys.exit()
-                if type(multiplier) not in [ int, float ]:
-                    logger.error ( "values of ssmultipliers need to be supplied as ints or floats" )
-                    sys.exit()
+        ssmultipliers = None
+        if hasattr ( args, "ssmultipliers" ):
+            ssmultipliers = canonizer.getSSMultipliers ( args.ssmultipliers )
+            if ssmultipliers != None:
+                for pids,multiplier in ssmultipliers.items():
+                    if type(pids) != tuple:
+                        logger.error ( "keys of ssmultipliers need to be supplied as tuples" )
+                        sys.exit()
+                    if type(multiplier) not in [ int, float ]:
+                        logger.error ( "values of ssmultipliers need to be supplied as ints or floats" )
+                        sys.exit()
 
-    pythiacard = None
-    if hasattr(args, 'pythiacard'):
-        pythiacard = args.pythiacard
+        pythiacard = None
+        if hasattr(args, 'pythiacard'):
+            pythiacard = args.pythiacard
 
-    children = []
-    for i in range(ncpus):
-        pid = os.fork()
-        chunk = inputFiles [ i::ncpus ]
-        if pid < 0:
-            logger.error ( "fork did not succeed! Pid=%d" % pid )
-            sys.exit()
-        if pid == 0:
-            logger.debug ( "chunk #%d: pid %d (parent %d)." %
+        children = []
+        for i in range(ncpus):
+            pid = os.fork()
+            chunk = inputFiles [ i::ncpus ]
+            if pid < 0:
+                logger.error ( "fork did not succeed! Pid=%d" % pid )
+                sys.exit()
+            if pid == 0:
+                logger.debug ( "chunk #%d: pid %d (parent %d)." %
                        ( i, os.getpid(), os.getppid() ) )
-            logger.debug ( " `-> %s" % " ".join ( chunk ) )
-            computer = XSecComputer( xsectool,order, args.nevents, pythiaVersion, \
+                logger.debug ( " `-> %s" % " ".join ( chunk ) )
+                computer = XSecComputer( xsectool,order, args.nevents, pythiaVersion, \
                                      not args.noautocompile )
-            toFile = canonizer.writeToFile ( args )
-            computer.computeForBunch (  sqrtses, chunk, not args.keep,
+                toFile = canonizer.writeToFile ( args )
+                computer.computeForBunch (  sqrtses, chunk, not args.keep,
                           args.LOfromSLHA, toFile, pythiacard=pythiacard, \
                         ssmultipliers = ssmultipliers )
-            os._exit ( 0 )
-        if pid > 0:
-            children.append ( pid )
-    for child in children:
-        r = os.waitpid ( child, 0 )
-        logger.debug ( "child %d terminated: %s" % (child,r) )
-    logger.debug ( "all children terminated." )
+                os._exit ( 0 )
+            if pid > 0:
+                children.append ( pid )
+        for child in children:
+            r = os.waitpid ( child, 0 )
+            logger.debug ( "child %d terminated: %s" % (child,r) )
+        logger.debug ( "all children terminated." )
+        
+        
+    def computeXsecsWithML(args,inputFiles,xsectool,ncpus,canonizer):
+        """ Compute xsections with an ML trained model  """
+        MLxsectool = toolBox.ToolBox().get("Xsec")
+        MLxsectool.initialize()
 
-
-
-   
-
-def MLxsecComputer(args,inputFiles,xsectool,ncpus,canonizer):
-
-    MLxsectool = toolBox.ToolBox().get("Xsec")
-    MLxsectool.Xsec_initializer()
-
-    children = []
-    for i in range(ncpus):
-        pid = os.fork()
-        chunk = inputFiles [ i::ncpus ]
-        if pid < 0:
-            logger.error ( "fork did not succeed! Pid=%d" % pid )
-            sys.exit()
-        if pid == 0:
-            logger.debug ( "chunk #%d: pid %d (parent %d)." %
+        children = []
+        for i in range(ncpus):
+            pid = os.fork()
+            chunk = inputFiles [ i::ncpus ]
+            if pid < 0:
+                logger.error ( "fork did not succeed! Pid=%d" % pid )
+                sys.exit()
+            if pid == 0:
+                logger.debug ( "chunk #%d: pid %d (parent %d)." %
                        ( i, os.getpid(), os.getppid() ) )
-            logger.debug ( " `-> %s" % " ".join ( chunk ) )
-            computer = XSecComputer( xsectool,None, None, None, \
+                logger.debug ( " `-> %s" % " ".join ( chunk ) )
+                computer = XSecComputer( xsectool,None, None, None, \
                                      not args.noautocompile )
-            toFile = canonizer.writeToFile ( args )
-            computer.MLcomputeForBunch ( chunk,  toFile )
-            os._exit ( 0 )
-        if pid > 0:
-            children.append ( pid )
-    for child in children:
-        r = os.waitpid ( child, 0 )
-        logger.debug ( "child %d terminated: %s" % (child,r) )
-    logger.debug ( "all children terminated." )
+                toFile = canonizer.writeToFile ( args )
+                computer.computeForBunchML ( chunk,  toFile )
+                os._exit ( 0 )
+            if pid > 0:
+                children.append ( pid )
+        for child in children:
+            r = os.waitpid ( child, 0 )
+            logger.debug ( "child %d terminated: %s" % (child,r) )
+        logger.debug ( "all children terminated." )
     
-    MLxsectool.Xsec_finalizer()
-
-   
+        MLxsectool.finalize()
 
 
 
-
-def main(args):
     canonizer = ArgsStandardizer()
     setLogLevel ( args.verbosity )
     if not hasattr ( args, "noautocompile" ):
@@ -729,9 +736,9 @@ def main(args):
    
     if xsectool=='Pythia-NNLfast':
         
-         PythiaComputer(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer)
+         computeXsecsWithPyhia(args,sqrtses,ncpus,order,inputFiles,xsectool,canonizer)
     elif xsectool=='Xsec':
-        MLxsecComputer(args,inputFiles,xsectool,ncpus,canonizer)
+         computeXsecsWithML(args,inputFiles,xsectool,ncpus,canonizer)
          
    
    

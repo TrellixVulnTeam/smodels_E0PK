@@ -27,13 +27,18 @@ def run ( nb ):
     dldir = "../downloads/"
     if not os.path.exists ( dldir ):
         os.mkdir ( dldir )
-    #cpcmd = "cp %s %s" % ( nb, dldir )
+    cpcmd = "cp %s %s" % ( nb, dldir )
     #print ( "cp: %s" % cpcmd )
-    #subprocess.getoutput ( cpcmd )
-    mvsrc = nb.replace ( ".ipynb", ".py" )
-    mvcmd = "mv %s %s" % ( mvsrc, dldir )
-    print ( "mv: %s" % mvcmd )
-    subprocess.getoutput ( mvcmd )
+    subprocess.getoutput ( cpcmd )
+    ipynbsrc = nb.replace ( ".ipynb", ".py" )
+    ipynbcmd = "mv %s %s" % ( ipynbsrc, dldir )
+    print ( "ipynb: %s" % ipynbcmd )
+    subprocess.getoutput ( ipynbcmd )
+    htmlsrc = nb.replace ( ".ipynb", ".html" )
+    htmlcmd = "cp %s %s" % ( htmlsrc, dldir )
+    print ( "html: %s" % htmlcmd )
+    subprocess.getoutput ( htmlcmd )
+
 
 for notebook in notebooks:
     m_nb = os.stat ( notebook ).st_mtime ## last modified notebook

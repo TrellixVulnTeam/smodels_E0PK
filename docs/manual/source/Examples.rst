@@ -20,7 +20,7 @@ Below we provide a few examples for using SModelS and some of the :ref:`SModelS 
 
 How about like this:
 
-* `How to run SModelS using a parameter file <runWithParameterFile>`_ (download the Python code :download:`here <downloads/runWithParameterFile.py>`, IPython notebook :download:`here <runWithParameterFile.ipynb>`)
+* `How to run SModelS using a parameter file <recipes/runWithParameterFile.html>`_ (download the Python code :download:`here <downloads/runWithParameterFile.py>`, IPython notebook :download:`here <recipes/runWithParameterFile.ipynb>`)
 
 
 .. toctree::

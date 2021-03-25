@@ -16,12 +16,12 @@ Below we provide a few examples for using SModelS and some of the :ref:`SModelS 
 
 **To try out the examples in interactive mode:** |binder|
 
-`runWithParameterFile <downloads/runWithParameterFile.py>`_
+Main examples:
+--------------
 
-How about like this:
+* `How To: Run SModelS using a parameter file <downloads/runWithParameterFile.html>`_ (download the Python code :download:`here <downloads/runWithParameterFile.py>`, IPython notebook :download:`here <downloads/runWithParameterFile.ipynb>`)
 
-* `How to run SModelS using a parameter file <downloads/runWithParameterFile.html>`_ (download the Python code :download:`here <downloads/runWithParameterFile.py>`, IPython notebook :download:`here <recipes/runWithParameterFile.ipynb>`)
-
+* `How To: Run SModelS as a python library <downloads/runAsLibrary.html>`_ (download the Python code :download:`here <downloads/runAsLibrary.py>`, IPython notebook :download:`here <downloads/runAsLibrary.ipynb>`)
 
 .. toctree::
    :caption: Main examples:

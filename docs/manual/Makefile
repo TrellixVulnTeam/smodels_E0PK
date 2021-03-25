@@ -58,6 +58,7 @@ copy_files:
 	cp ../../smodels/etc/parameters_default.ini source/images/
 	cp ../../cpp/run.cpp source/examples/
 	cp ../../Example.py source/examples/
+	cp -r source/downloads/ $(BUILDDIR)/html
 
 update_code:
 	sphinx-apidoc -f -T -o source/ ../../smodels/experiment/

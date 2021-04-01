@@ -70,13 +70,17 @@ class XSecTest(unittest.TestCase):
     def testMLXsec(self):
         """ test the computation of NLO SUSY strong cross sections with Xsec """
         self.logger.info ( "test Xsec interface" )
-        slhafile="./testFiles/slha/simplyGluino.slha"
+        slhafile="./testFiles/slha/XsecTest.slha"
         MLxsectool = toolBox.ToolBox().get("Xsec")
         MLxsectool.initialize()
         computer = xsecComputer.XSecComputer ( 'Xsec',None, None, None )
-        computer.computeForOneFileML ( slhafile,  True )
-        print('hello')
+        xsecs,lower_uncertainty_list,upper_uncertainty_list = MLxsectool.run( inputFile)
+        
+        testvalue=xsecs.getDictionary().get((1000021, 1000021)).get('13 TeV (NLO)')/pb
         MLxsectool.finalize()
+        self.assertAlmostEqual( testvalue/ 3.5 , 1., 2 )
+        
+     
 
         
     def testXSecMain(self):

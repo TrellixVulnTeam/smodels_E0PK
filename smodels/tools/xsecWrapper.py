@@ -37,7 +37,7 @@ class XsecWrapper(WrapperBase):
         """
         WrapperBase.__init__(self)
         self.name = "Xsec"
-        self.executablePath = os.path.abspath ( "./xsecWrapper.py" )
+        self.executablePath = self.absPath ( "<install>/smodels/tools/xsecWrapper.py" )
         ## initialize xsec
         
     

@@ -13,7 +13,7 @@ import sys,os
 sys.path.insert(0,"../")
 from smodels.tools import xsecComputer, toolBox
 from smodels.tools.xsecComputer import LO, NLL
-from smodels.tools.physicsUnits import TeV, fb
+from smodels.tools.physicsUnits import TeV, fb,pb
 from smodels.theory import crossSection
 import tempfile
 import unittest
@@ -70,13 +70,14 @@ class XSecTest(unittest.TestCase):
     def testMLXsec(self):
         """ test the computation of NLO SUSY strong cross sections with Xsec """
         self.logger.info ( "test Xsec interface" )
-        slhafile="./testFiles/slha/XsecTest.slha"
+        slhaFile="./testFiles/slha/XsecTest.slha"
         MLxsectool = toolBox.ToolBox().get("Xsec")
         MLxsectool.initialize()
         computer = xsecComputer.XSecComputer ( 'Xsec',None, None, None )
-        xsecs,lower_uncertainty_list,upper_uncertainty_list = MLxsectool.run( inputFile)
+        xsecs,lower_uncertainty_list,upper_uncertainty_list = MLxsectool.run( slhaFile)
         
         testvalue=xsecs.getDictionary().get((1000021, 1000021)).get('13 TeV (NLO)')/pb
+        testvalue=float(testvalue)
         MLxsectool.finalize()
         self.assertAlmostEqual( testvalue/ 3.5 , 1., 2 )
         
@@ -86,7 +87,7 @@ class XSecTest(unittest.TestCase):
     def testXSecMain(self):
         """ test the main routine for computation of LO and NLL cross section for several sqrts"""
         
-        slhafile="./testFiles/slha/XsecTest.slha"
+        slhafile="./testFiles/slha/simplyGluino.slha"
         f = open(slhafile,'r')
         fdata = f.read()
         fdata = fdata[:fdata.find('XSECTION')]

@@ -40,14 +40,39 @@ class XsecWrapper(WrapperBase):
         self.executablePath = self.absPath ( "<install>/smodels/tools/xsecWrapper.py" )
         ## initialize xsec
         
+        
+    def download ( self ):
+        """ download the data files """
+        
+        if os.path.isdir(os.path.join(installation.cacheDirectory(), "xsec_gp_dir" ))==False:
+            cmd = "xsec-download-gprocs -g "+os.path.join(installation.cacheDirectory(), "xsec_gp_dir" )+" -t all"
+            print("Xsec trained models not found. Downloading them in the cache directory "+os.path.join(installation.cacheDirectory(), "xsec_gp_dir" )+". \n The cache directory can be changed via the environment variable 'SMODELS_CACHEDIR'. \n The download may take a while.")
+            import subprocess
+            subprocess.getoutput ( cmd )
+            print("Done")
+        
     
     
     def initialize(self):
         """Initialize Xsec: Decompressing models and setting CoM and processes"""
         self.download()
-        xsec.init(data_dir="gp_dir",use_cache=True,cache_dir='cache_dir')
-        xsec.set_energy(13000)
-        self.setProcesses( "all" )
+        
+        try:
+            xsec.init(data_dir=os.path.join(installation.cacheDirectory(), "xsec_gp_dir" ) ,use_cache=True,cache_dir=os.path.join(installation.cacheDirectory(), "xsec_cache_dir" ))
+            xsec.set_energy(13000)
+            self.setProcesses( "all" )
+            
+        except:
+            
+            os.system("rm -r "+os.path.join(installation.cacheDirectory(), "xsec_gp_dir"))
+            self.download()
+            xsec.init(data_dir=os.path.join(installation.cacheDirectory(), "xsec_gp_dir" ) ,use_cache=True,cache_dir=os.path.join(installation.cacheDirectory(), "xsec_cache_dir" ))
+            xsec.set_energy(13000)
+            self.setProcesses( "all" )
+            
+            
+        
+        
 
 
     def setProcesses ( self, mode : str ):
@@ -104,15 +129,7 @@ class XsecWrapper(WrapperBase):
         self.processes = processes
         xsec.load_processes ( processes )
 
-    def download ( self ):
-        """ download the data files """
-        
-        if os.path.isdir('./gp_dir')==False:
-            cmd = "xsec-download-gprocs -g gp_dir -t all"
-            print("Xsec trained models not found. Downloading them...")
-            import subprocess
-            subprocess.getoutput ( cmd )
-            print("Done")
+    
 
     def checkFileExists(self, inputFile):
         """

@@ -48,7 +48,7 @@ class XSecComputer:
         self.countNoNLOXSecs = 0
          
         if xsectool=='Pythia-NNLfast':
-         self.maxOrder = _checkMaxOrder ( maxOrder )
+         self.maxOrder = self._checkMaxOrder ( maxOrder )
          if nevents < 1:
                logger.error ( "Supplied nevents < 1" )
                sys.exit()

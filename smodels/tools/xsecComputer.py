@@ -714,7 +714,7 @@ def main(args):
             logger.debug ( "child %d terminated: %s" % (child,r) )
         logger.debug ( "all children terminated." )
     
-        MLxsectool.finalize()
+       # MLxsectool.finalize()
 
 
 

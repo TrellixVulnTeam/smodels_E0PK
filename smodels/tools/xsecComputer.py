@@ -713,8 +713,11 @@ def main(args):
             r = os.waitpid ( child, 0 )
             logger.debug ( "child %d terminated: %s" % (child,r) )
         logger.debug ( "all children terminated." )
-    
-       # MLxsectool.finalize()
+        
+        if args.clean_cache==True:
+            print('cleaning cache...')
+            MLxsectool.finalize()
+            print('Done.')
 
 
 

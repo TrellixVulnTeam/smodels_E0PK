@@ -129,12 +129,12 @@ class TheoryPrediction(object):
         from smodels.tools.runtime import experimentalFeatures
         if not experimentalFeatures():
             if chi2also:
-                return ( None, None, None, None )
+                return ( None, None )
             return None
         if not hasattr ( self, "avgElement" ):
             logger.error ( "theory prediction %s has no average element! why??" % self.analysisId() )
             if chi2also:
-                return ( None, None, None, None )
+                return ( None, None )
             return None
 
         eul = self.dataset.getUpperLimitFor(element=self.avgElement,
@@ -142,7 +142,7 @@ class TheoryPrediction(object):
                                             expected=True)
         if type(eul) == type(None):
             if chi2also:
-                return ( None, None, None, None )
+                return ( None, None)
             return None
         ul = self.dataset.getUpperLimitFor(element=self.avgElement,
                                             txnames=self.txnames,
@@ -153,9 +153,7 @@ class TheoryPrediction(object):
         nsig = mu*(self.xsection.value*lumi).asNumber()
         llhd = likelihoodFromLimits ( ulN, eulN, nsig )
         if chi2also:
-            llhd_max=llhd*chi2FromLimits ( llhd, eulN )
-            llhd_sm=likelihoodFromLimits ( 0, eulN, nsig )
-            return ( llhd,llhd_max,llhd_sm, chi2FromLimits ( llhd, eulN ) )
+            return ( llhd, chi2FromLimits ( llhd, eulN ) )
         return llhd
 
     def getLikelihood(self,mu=1.,marginalize=False,deltas_rel=.2,expected=False):
@@ -183,10 +181,8 @@ class TheoryPrediction(object):
         """
 
         if self.dataType()  == 'upperLimit':
-            llhd, llhd_max, llhd_sm, chi2 = self.likelihoodFromLimits ( 1., marginalize, deltas_rel, chi2also=True )
+            llhd, chi2 = self.likelihoodFromLimits ( 1., marginalize, deltas_rel, chi2also=True )
             self.likelihood = llhd
-            self.likelihood_max = llhd_max
-            self.likelihood_sm = llhd_sm
             self.chi2 = chi2
 
         elif self.dataType() == 'efficiencyMap':

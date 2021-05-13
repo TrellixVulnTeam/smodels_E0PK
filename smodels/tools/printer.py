@@ -608,7 +608,7 @@ class SummaryPrinter(TxTPrinter):
             txnameStr = txnameStr.replace("'","").replace("[", "").replace("]","")
             output += " Txnames:  " + txnameStr + "\n"
             if hasattr(theoPred,'chi2') and not theoPred.chi2 is None:
-                output += " Chi2, Likelihood, Likelihood_max, Likelihood_sm = %10.3E %10.3E %10.3E %10.3E\n" % (theoPred.chi2, theoPred.likelihood,theoPred.likelihood_max,theoPred.likelihood_sm)
+                output += " Likelihood, Likelihood_max, Likelihood_sm = %10.3E %10.3E %10.3E\n" % (theoPred.likelihood,theoPred.likelihood_max,theoPred.likelihood_sm)
 
             if not (theoPred is obj[-1]):
                 output += 80 * "-"+ "\n"
@@ -835,8 +835,9 @@ class PyPrinter(BasicPrinter):
             if hasattr(self,"addtxweights") and self.addtxweights:
                 resDict['TxNames weights (fb)'] =  txnamesDict
             if hasattr(theoryPrediction,'chi2') and not theoryPrediction.chi2 is None:
-                resDict['chi2'] = theoryPrediction.chi2
                 resDict['likelihood'] = theoryPrediction.likelihood
+                resDict['likelihood_max'] = theoryPrediction.likelihood_max
+                resDict['likelihood_sm'] = theoryPrediction.likelihood_sm
             ExptRes.append(resDict)
 
 
@@ -1088,9 +1089,13 @@ class SLHAPrinter(TxTPrinter):
             if hasattr(theoPred,'chi2') and not theoPred.chi2 is None:
                 output += " %d 6 %-30.3E #Chi2\n" % (cter, theoPred.chi2)
                 output += " %d 7 %-30.3E #Likelihood\n" % (cter, theoPred.likelihood)
+                output += " %d 8 %-30.3E #Likelihood_max\n" % (cter, theoPred.likelihood_max)
+                output += " %d 9 %-30.3E #Likelihood_sm\n" % (cter, theoPred.likelihood_sm)
             else:
                 output += " %d 6 N/A                            #Chi2\n" % (cter)
                 output += " %d 7 N/A                            #Likelihood\n" % (cter)
+                output += " %d 8 N/A                            #Likelihood_max\n" % (cter)
+                output += " %d 9 N/A                            #Likelihood_sm\n" % (cter)
             output += "\n"
 
         return output

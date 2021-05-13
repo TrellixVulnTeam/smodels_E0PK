@@ -471,7 +471,9 @@ class TxTPrinter(BasicPrinter):
                 output += "Expected r-Value: %s\n" %theoryPrediction.getRValue(expected=True)
             if hasattr(theoryPrediction,'chi2') and not theoryPrediction.chi2 is None:
                 output += "Chi2: " + str(theoryPrediction.chi2) + "\n"
-                output += "Likelihood: " + str(theoryPrediction.likelihood) + "\n"
+                output += "Likelihood SUSY: " + str(theoryPrediction.likelihood) + "\n"
+                output += "Likelihood max: " + str(theoryPrediction.likelihood_max) + "\n"
+                output += "Likelihood SM: " + str(theoryPrediction.likelihood_sm) + "\n"
 
             if hasattr(self,"printextendedresults") and self.printextendedresults:
                 if theoryPrediction.mass:
@@ -606,7 +608,7 @@ class SummaryPrinter(TxTPrinter):
             txnameStr = txnameStr.replace("'","").replace("[", "").replace("]","")
             output += " Txnames:  " + txnameStr + "\n"
             if hasattr(theoPred,'chi2') and not theoPred.chi2 is None:
-                output += " Chi2, Likelihood = %10.3E %10.3E\n" % (theoPred.chi2, theoPred.likelihood)
+                output += " Chi2, Likelihood, Likelihood_max, Likelihood_sm = %10.3E %10.3E %10.3E %10.3E\n" % (theoPred.chi2, theoPred.likelihood,theoPred.likelihood_max,theoPred.likelihood_sm)
 
             if not (theoPred is obj[-1]):
                 output += 80 * "-"+ "\n"

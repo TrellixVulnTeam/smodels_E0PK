@@ -15,6 +15,7 @@ from smodels.experiment.datasetObj import CombinedDataSet
 from smodels.tools.smodelsLogging import logger
 from smodels.tools.statistics import likelihoodFromLimits, chi2FromLimits
 import itertools
+import numpy as np
 
 class TheoryPrediction(object):
     """
@@ -128,12 +129,12 @@ class TheoryPrediction(object):
         from smodels.tools.runtime import experimentalFeatures
         if not experimentalFeatures():
             if chi2also:
-                return ( None, None )
+                return ( None, None, None, None )
             return None
         if not hasattr ( self, "avgElement" ):
             logger.error ( "theory prediction %s has no average element! why??" % self.analysisId() )
             if chi2also:
-                return ( None, None )
+                return ( None, None, None, None )
             return None
 
         eul = self.dataset.getUpperLimitFor(element=self.avgElement,
@@ -141,7 +142,7 @@ class TheoryPrediction(object):
                                             expected=True)
         if type(eul) == type(None):
             if chi2also:
-                return ( None, None )
+                return ( None, None, None, None )
             return None
         ul = self.dataset.getUpperLimitFor(element=self.avgElement,
                                             txnames=self.txnames,
@@ -152,7 +153,9 @@ class TheoryPrediction(object):
         nsig = mu*(self.xsection.value*lumi).asNumber()
         llhd = likelihoodFromLimits ( ulN, eulN, nsig )
         if chi2also:
-            return ( llhd, chi2FromLimits ( llhd, eulN ) )
+            llhd_max=llhd*chi2FromLimits ( llhd, eulN )
+            llhd_sm=likelihoodFromLimits ( 0, eulN, nsig )
+            return ( llhd,llhd_max,llhd_sm, chi2FromLimits ( llhd, eulN ) )
         return llhd
 
     def getLikelihood(self,mu=1.,marginalize=False,deltas_rel=.2,expected=False):
@@ -180,16 +183,22 @@ class TheoryPrediction(object):
         """
 
         if self.dataType()  == 'upperLimit':
-            llhd, chi2 = self.likelihoodFromLimits ( 1., marginalize, deltas_rel, chi2also=True )
+            llhd, llhd_max, llhd_sm, chi2 = self.likelihoodFromLimits ( 1., marginalize, deltas_rel, chi2also=True )
             self.likelihood = llhd
+            self.likelihood_max = llhd_max
+            self.likelihood_sm = llhd_sm
             self.chi2 = chi2
 
         elif self.dataType() == 'efficiencyMap':
             lumi = self.dataset.getLumi()
             nsig = (self.xsection.value*lumi).asNumber()
             llhd = self.dataset.likelihood(nsig,marginalize=marginalize,deltas_rel=deltas_rel)
+            llhd_sm = self.dataset.likelihood(0,marginalize=marginalize,deltas_rel=deltas_rel)
             chi2 = self.dataset.chi2(nsig,marginalize=marginalize,deltas_rel=deltas_rel)
+            llhd_max=llhd*np.exp(chi2/2)
             self.likelihood =  llhd
+            self.likelihood_max = llhd_max
+            self.likelihood_sm = llhd_sm
             self.chi2 =  chi2
 
         elif self.dataType() == 'combined':

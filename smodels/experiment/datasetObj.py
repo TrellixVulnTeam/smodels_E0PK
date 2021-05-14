@@ -303,7 +303,7 @@ class DataSet(object):
         :returns: likelihood max to observe nobs events (float)
         """
         dn = self.dataInfo.observedN - self.dataInfo.expectedBG
-        return self.likelihood ( dn, deltas_real=deltas_real, marginalize=marginalize, expected=expected )
+        return self.likelihood ( dn, 0.2, False, False )
 
     def chi2(self, nsig, deltas_rel=0.2, marginalize=False):
         """

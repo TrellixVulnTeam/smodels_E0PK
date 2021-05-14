@@ -690,25 +690,6 @@ class LikelihoodComputer:
         else:
             return self.profileLikelihood(nsig, nll)
 
-    def likelihood_max(self, nsig, marginalize=False):
-            """
-            Computes the likelihood max for a given number of observed events nobs given
-            the predicted background nb, error on this background deltab,
-            expected number of signal events nsig and the relative error on
-            signal (deltas_rel).
-            :param marginalize: if true, marginalize, if false, profile
-            :param nsig: number of signal events
-            :return: likelihood max (float)
-            """
-            nsig = self.model.convert(nsig)
-
-
-            # Compute the maximum likelihood H1, which sits at nsig = nobs - nb
-            # (keeping the same % error on signal):
-            dn = self.model.observed-self.model.backgrounds
-            maxllhd = self.likelihood(dn, marginalize=marginalize, nll=True )
-            return maxllhd
-
     def chi2(self, nsig, marginalize=False):
             """
             Computes the chi2 for a given number of observed events nobs given

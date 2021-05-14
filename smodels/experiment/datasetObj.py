@@ -291,6 +291,19 @@ class DataSet(object):
         computer = LikelihoodComputer(m)
         return computer.likelihood(nsig, marginalize=marginalize)
 
+    def Lmax ( self, deltas_rel=0.2, marginalize=False, expected=False ):
+        """
+        Computes the likelihood max to observe nobs events,
+        assuming "deltas" error on the signal efficiency.
+        The values observedN, expectedBG, and bgError are part of dataInfo.
+
+        :param deltas_rel: relative uncertainty in signal (float). Default value is 20%.
+        :param marginalize: if true, marginalize nuisances. Else, profile them.
+        :param expected: Compute expected instead of observed likelihood
+        :returns: likelihood max to observe nobs events (float)
+        """
+        dn = self.dataInfo.observedN - self.dataInfo.expectedBG
+        return self.likelihood ( dn, deltas_real=deltas_real, marginalize=marginalize, expected=expected )
 
     def chi2(self, nsig, deltas_rel=0.2, marginalize=False):
         """

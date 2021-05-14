@@ -191,7 +191,7 @@ class TheoryPrediction(object):
             llhd = self.dataset.likelihood(nsig,marginalize=marginalize,deltas_rel=deltas_rel)
             llhd_sm = self.dataset.likelihood(0,marginalize=marginalize,deltas_rel=deltas_rel)
             chi2 = self.dataset.chi2(nsig,marginalize=marginalize,deltas_rel=deltas_rel)
-            llhd_max = self.dataset.likelihood_max(nsig,marginalize=marginalize,deltas_rel=deltas_rel)
+            llhd_max = self.dataset.likelihood_max(nsig,marginalize=marginalize,deltas_rel=deltas_rel) #ATTENTION
             self.likelihood =  llhd
             self.likelihood_max = llhd_max
             self.likelihood_sm = llhd_sm

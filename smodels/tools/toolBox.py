@@ -13,6 +13,7 @@
 from smodels.tools import pythia6Wrapper
 from smodels.tools import pythia8Wrapper
 from smodels.tools import nllFastWrapper
+from smodels.tools import referenceXSecWrapper
 from smodels.tools import externalPythonTools
 from smodels.tools.smodelsLogging import logger
 from smodels.tools.colors import colors
@@ -43,6 +44,7 @@ class ToolBox(object):
         """
         self.add(pythia6Wrapper.Pythia6Wrapper())
         self.add(pythia8Wrapper.Pythia8Wrapper())
+        self.add(referenceXSecWrapper.ReferenceXSecWrapper())
         for tool in nllFastWrapper.nllFastTools.values():
                 self.add(tool)
         for tool in externalPythonTools.pythonTools.values():
@@ -146,3 +148,11 @@ def main ( args ):
     if args.colors:
         colors.on = True
     tmp.checkInstallation( printit=True, longL = args.long )
+
+if __name__ == "__main__":
+    from types import SimpleNamespace
+    args = SimpleNamespace()
+    args.colors = True
+    args.make = False
+    args.long = False
+    main( args )

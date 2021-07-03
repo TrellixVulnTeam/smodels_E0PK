@@ -36,6 +36,10 @@ class ReferenceXSecWrapper:
         """ not really needed. """
         return None
 
+    def pathOfExecutable( self ):
+        """ dummy implementation """
+        return "N/A"
+
     def checkInstallation ( self ):
         """ not really needed. """
         return True

@@ -28,7 +28,7 @@ class ReferenceXSecWrapper:
         """ we dont derive from WrapperBase because it is not really a wrapper.
             It's something simpler. """
         self.name = "refxsec"
-        self.sqrts = 13
+        self.sqrtses = [ 13 ]
         self.shareDir = os.path.join ( installation.installDirectory(), \
                                        "smodels", "share", "refxsecs" )
 
@@ -68,15 +68,19 @@ class ReferenceXSecWrapper:
         channels = self.findOpenChannels ( slhafile )
         xsecs = []
         for channel in channels:
-            xsec = self.getXSecsFor ( channel[0], channel[1], self.sqrts,
-                                       "" )
-            xsecs.append ( xsec )
+            # obtain xsecs for all masses, but for the given channel
+            for sqrts in self.sqrtses:
+                xsecall,order,comment = self.getXSecsFor ( channel[0], channel[1], sqrts, "" )
+                ## interpolate for the mass that we are looking for
+                masses = ( channel[2], channel[3] )
+                xsec = self.interpolate ( masses[0], xsecall )
+                xsecs.append ( xsec )
         return xsecs
 
     def findOpenChannels ( self, slhafile ):
         slhadata = pyslha.readSLHAFile ( slhafile )
         masses = slhadata.blocks["MASS"]
-        print ( "findOpenChannels" )
+        # print ( "findOpenChannels" )
         channels = []
         # productions of same-sign-pid pairs when the particle is within reach
         samesignmodes = ( 1000021, )
@@ -96,14 +100,14 @@ class ReferenceXSecWrapper:
                 continue
 
             if pid in samesignmodes:
-                channels.append ( (pid,pid ) )
+                channels.append ( (pid,pid, mass, mass ) )
             if pid in oppositesignmodes:
-                channels.append ( (-pid,pid ) )
+                channels.append ( (-pid,pid, mass, mass ) )
             for jpid, jmass in masses.items():
                 if pid == jpid:
                     continue
                 if (pid,jpid) in associateproductions:
-                    channels.append ( (pid,jpid) )     
+                    channels.append ( (pid,jpid, mass, jmass ) )
 
         return channels
 
@@ -112,10 +116,10 @@ class ReferenceXSecWrapper:
         if mass in xsecs:
             return xsecs[mass]
         if mass < min(xsecs.keys()):
-            print ( "[referenceXSecWrapper] mass %d<%d too low to interpolate, leave it as is."  % ( mass, min(xsecs.keys() ) ) )
+            logger.info ( "mass %d<%d too low to interpolate, leave it as is."  % ( mass, min(xsecs.keys() ) ) )
             return None
         if mass > max(xsecs.keys()):
-            print ( "[referenceXSecWrapper] mass %d>%d too high to interpolate, leave it as is." % ( mass, max(xsecs.keys() ) ) )
+            logger.info ( "mass %d>%d too high to interpolate, leave it as is." % ( mass, max(xsecs.keys() ) ) )
             return None
         from scipy.interpolate import interp1d
         return interp1d ( list(xsecs.keys()), list(xsecs.values()) )( mass )
@@ -127,9 +131,9 @@ class ReferenceXSecWrapper:
         """
         ret = {}
         if not os.path.exists ( path ):
-            print ( "[referenceXSecWrapper] could not find %s" % path )
+            logger.info ( "could not find %s" % path )
             return ret
-        print ( "getting xsecs from %s" % path )
+        logger.info ( "getting xsecs from %s" % path )
         f = open ( path, "rt" )
         lines=f.readlines()
         f.close()
@@ -157,7 +161,7 @@ class ReferenceXSecWrapper:
         pb = True
         columns = { "mass": 0, "xsec": 1 }
         isEWK=False
-        comment=""
+        comment="refxsec [pb]"
         if pid1 in [ 1000021 ] and pid2 == pid1:
             filename = "xsecgluino%d.txt" % sqrts
             columns["xsec"]=2
@@ -207,8 +211,8 @@ class ReferenceXSecWrapper:
             filename = "xsecslepRslepR%d.txt" % sqrts
             order = 2 # 3
         if filename == None:
-            print ( "[referenceXSecWrapper] could not identify filename for xsecs" )
-            print ( "              seems like we dont have ref xsecs for the pids %d/%d?" % ( pid1, pid2 ) )
+            logger.info ( "could not identify filename for xsecs" )
+            logger.info ( "seems like we dont have ref xsecs for the pids %d/%d?" % ( pid1, pid2 ) )
             sys.exit()
         if ewk == "hino":
             filename = filename.replace(".txt","hino.txt" )
@@ -216,7 +220,7 @@ class ReferenceXSecWrapper:
             comment = " (%s)" % ewk
         path = os.path.join ( self.shareDir, filename )
         if not os.path.exists ( path ):
-            print ( "[referenceXSecWrapper] %s missing" % path )
+            logger.info ( "%s missing" % path )
             sys.exit()
         xsecs = self.getXSecsFrom ( path, pb, columns )
         return xsecs,order,comment
@@ -227,6 +231,7 @@ if __name__ == "__main__":
     logger.info("installed: " + str(tool.installDirectory()))
     logger.info("check: " + wrapperBase.ok(tool.checkInstallation()))
     slhafile = "inputFiles/slha/simplyGluino.slha"
+    # slhafile = "./test.slha"
     slhapath = os.path.join ( installation.installDirectory(), slhafile )
     logger.info ( "slhafile: " + slhapath )
     output = tool.run(slhapath )

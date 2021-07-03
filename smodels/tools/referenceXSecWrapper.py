@@ -62,7 +62,7 @@ class ReferenceXSecWrapper:
         ret = "tool: %s\n" % (self.name)
         return ret
 
-    def run( self, slhafile, lhefile=None, unlink=True ):
+    def run( self, slhafile ): ## , lhefile=None, unlink=True ):
         """
         Retrieve cross sections
 

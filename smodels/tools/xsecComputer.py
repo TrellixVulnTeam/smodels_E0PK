@@ -27,7 +27,8 @@ import sys
 
 class XSecComputer:
     """ cross section computer class, what else? """
-    def __init__ ( self, maxOrder, nevents, pythiaVersion, maycompile=True ):
+    def __init__ ( self, maxOrder, nevents, pythiaVersion, maycompile=True,
+                   reference_xsecs = False ):
         """
         :param maxOrder: maximum order to compute the cross section, given as an integer
                     if maxOrder == LO, compute only LO pythia xsecs
@@ -36,8 +37,10 @@ class XSecComputer:
         :param nevents: number of events for pythia run
         :param pythiaVersion: pythia6 or pythia8 (integer)
         :param maycompile: if True, then tools can get compiled on-the-fly
+        :param reference_xsecs: if True, use reference cross sections whenever possible
         """
         self.maxOrder = self._checkMaxOrder ( maxOrder )
+        self.reference_xsecs = reference_xsecs
         self.countNoXSecs = 0
         self.countNoNLOXSecs = 0
         self.maycompile = maycompile
@@ -258,6 +261,24 @@ class XSecComputer:
         #    logger.debug ( "now writing out xsecs: %s" % xsec.value )
         logger.debug ( "how many NLL xsecs? %d" % len(self.xsecs) )
         return self.xsecs
+
+    def retrieveReferenceXSecs ( self, sqrtses, inputFile, ssmultipliers ):
+        """
+        Retrieve the reference cross sections
+
+        :param sqrtses: list of sqrt{s} tu run pythia, as a unum (e.g. [7*TeV])
+        :param inputFile: input SLHA file to compute xsecs for
+        :param ssmultipliers: optionally supply signal strengh multipliers,
+                              given as dictionary of the tuple of the mothers' pids as keys and
+                              multipliers as values, e.g { (1000001,1000021):1.1 }.
+        :returns: number of xsections that have been retrieved
+        """
+        # FIXME implement
+        refxsec = toolBox.ToolBox().get("refxsec" )
+        refxsec.sqrtses = sqrtses
+        xsecs = refxsec.run ( inputfile )
+
+        return 0
 
     def computeForOneFile ( self, sqrtses, inputFile, unlink,
                             lOfromSLHA, tofile, pythiacard = None,
@@ -597,7 +618,7 @@ def main(args):
                        ( i, os.getpid(), os.getppid() ) )
             logger.debug ( " `-> %s" % " ".join ( chunk ) )
             computer = XSecComputer( order, args.nevents, pythiaVersion, \
-                                     not args.noautocompile )
+                                     not args.noautocompile, args.reference_xsecs )
             toFile = canonizer.writeToFile ( args )
             computer.computeForBunch (  sqrtses, chunk, not args.keep,
                           args.LOfromSLHA, toFile, pythiacard=pythiacard, \

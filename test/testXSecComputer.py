@@ -101,6 +101,8 @@ class XSecTest(unittest.TestCase):
         xargs.filename = tmpfile
         xargs.colors = False
         xargs.ssmultipliers = None
+        xargs.reference_xsecs = False
+        xargs.only_reference_xsecs = False
         xargs.verbosity = "warning"
         #Compute LO cross sections
         xsecComputer.main(xargs)
@@ -156,6 +158,8 @@ class XSecTest(unittest.TestCase):
         xargs.pythia6 = True
         xargs.filename = tmpfile
         xargs.colors = False
+        xargs.reference_xsecs = False
+        xargs.only_reference_xsecs = False
         xargs.ssmultipliers = { (1000021,1000021): 4. }
         # xargs.ssmultipliers = { 1000021: 2. }
         xargs.verbosity = "warning"
@@ -213,6 +217,8 @@ class XSecTest(unittest.TestCase):
         xargs.pythia6 = True
         xargs.filename = tmpfile
         xargs.colors = False
+        xargs.reference_xsecs = False
+        xargs.only_reference_xsecs = False
         xargs.ssmultipliers = { ('*100002?','*1000021'): 4. }
         # xargs.ssmultipliers = { 1000021: 2. }
         xargs.verbosity = "warning"

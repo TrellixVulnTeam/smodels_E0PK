@@ -49,8 +49,10 @@ def main():
         help="use pythia6 for LO cross sections")
     xseccomputer.add_argument('-8', '--pythia8', action='store_true',
         help="use pythia8 for LO cross sections (default)")
-    xseccomputer.add_argument('-R', '--reference_xsecs', action='store_true',
+    xseccomputer.add_argument('-r', '--reference_xsecs', action='store_true',
         help="use the reference cross sections if possible")
+    xseccomputer.add_argument('-R', '--only_reference_xsecs', action='store_true',
+        help="use *only* reference cross sections")
     xseccomputer.add_argument('-n', '--NLO', action='store_true',
         help="compute at the NLO level (default is LO)")
     xseccomputer.add_argument('-N', '--NLL', help="compute at the NLO+NLL level (takes precedence over NLO, default is LO)", action='store_true')

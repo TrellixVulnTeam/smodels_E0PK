@@ -24,6 +24,7 @@ class ReferenceXSecWrapper:
     """
     An instance of this class represents the installation of pythia8.
     """
+    version = "1.0" ## make sure we can trace changes in the tables
 
     def __init__(self ):
         """ we dont derive from WrapperBase because it is not really a wrapper.
@@ -71,7 +72,7 @@ class ReferenceXSecWrapper:
         xsec.info = crossSection.XSectionInfo ( D["sqrts"]*TeV, D["order"], D["label"] )
         return xsec
 
-    def run( self, slhafile ): ## , lhefile=None, unlink=True ):
+    def run( self, slhafile, ssmultipliers ):
         """
         Retrieve cross sections
 
@@ -87,6 +88,12 @@ class ReferenceXSecWrapper:
                 xsecall,order,comment = self.getXSecsFor ( pids[0], pids[1], sqrts, "" )
                 ## interpolate for the mass that we are looking for
                 xsec = self.interpolate ( channel["masses"][0], xsecall )
+                if ( pids[1], pids[0] ) in ssmultipliers:
+                    pids = ( pids[1], pids[0] )
+                if pids in ssmultipliers:
+                    ssm = ssmultipliers[pids]
+                    channel["ssm"] = ssm
+                    xsec = xsec * ssm
                 channel["xsec"] = xsec
                 channel["sqrts"] = sqrts
                 channel["order"] = order

@@ -27,8 +27,8 @@ import sys
 
 class XSecComputer:
     """ cross section computer class, what else? """
-    def __init__ ( self, maxOrder, nevents, pythiaVersion, maycompile=True,
-                   reference_xsecs = False ):
+    def __init__ ( self, maxOrder=NLL, nevents=0, pythiaVersion=8, maycompile=True,
+                   reference_xsecs = "never" ):
         """
         :param maxOrder: maximum order to compute the cross section, given as an integer
                     if maxOrder == LO, compute only LO pythia xsecs
@@ -37,9 +37,16 @@ class XSecComputer:
         :param nevents: number of events for pythia run
         :param pythiaVersion: pythia6 or pythia8 (integer)
         :param maycompile: if True, then tools can get compiled on-the-fly
-        :param reference_xsecs: if True, use reference cross sections whenever possible
+        :param reference_xsecs: "never", "available", "only"  
+                    use reference cross sections? "only" means, use only reference cross
+                    sections, never pythia. "never" means never use reference cross 
+                    sections. "available" means use them when available, else use pythia.
         """
         self.maxOrder = self._checkMaxOrder ( maxOrder )
+        if reference_xsecs not in [ "only", "available", "never" ]:
+            line = "reference_xsecs needs to be one of: 'only', 'available', 'never'"
+            logger.error ( line )
+            raise SModelSError ( line )
         self.reference_xsecs = reference_xsecs
         self.countNoXSecs = 0
         self.countNoNLOXSecs = 0
@@ -269,17 +276,18 @@ class XSecComputer:
         :param sqrtses: list of sqrt{s} tu run pythia, as a unum (e.g. [7*TeV])
         :param inputFile: input SLHA file to compute xsecs for
         :param ssmultipliers: optionally supply signal strengh multipliers,
-                              given as dictionary of the tuple of the mothers' pids as keys and
-                              multipliers as values, e.g { (1000001,1000021):1.1 }.
+                          given as dictionary of the tuple of the mothers' pids as keys and
+                          multipliers as values, e.g { (1000001,1000021):1.1 }.
         :returns: number of xsections that have been retrieved
         """
-        # FIXME implement
         refxsec = toolBox.ToolBox().get("refxsec" )
         refxsec.sqrtses = sqrtses
-        xsecs = refxsec.run ( inputFile )
+        xsecs = refxsec.run ( inputFile, ssmultipliers )
         nXSecs = 0
         complain = True
-        xcomment = "reference cross sections v1.0 [pb]"
+        ver = refxsec.version
+        xcomment = f"reference cross sections v{ver} [pb]"
+        ### FIXME take into account multipliers
         nXSecs += self.addXSecToFile( xsecs, inputFile, xcomment, complain )
 
         return len(xsecs)
@@ -294,19 +302,22 @@ class XSecComputer:
         :param inputFile: input SLHA file to compute xsecs for
         :param unlink: if False, keep temporary files
         :param lofromSLHA: try to obtain LO xsecs from SLHA file itself
-        :param tofile: False, True, "all": write results to file, if "all" also write lower xsecs to file.
+        :param tofile: False, True, "all": write results to file, 
+                       if "all" also write lower xsecs to file.
         :param pythiacard: optionally supply your own runcard
         :param ssmultipliers: optionally supply signal strengh multipliers,
-                              given as dictionary of the tuple of the mothers' pids as keys and
-                              multipliers as values, e.g { (1000001,1000021):1.1 }.
+                          given as dictionary of the tuple of the mothers' pids as keys and
+                          multipliers as values, e.g { (1000001,1000021):1.1 }.
         :param comment: an optional comment that gets added to the slha file.
 
         :returns: number of xsections that have been computed
         """
-        if self.reference_xsecs == True:
-            return self.retrieveReferenceXSecs( sqrtses, inputFile, ssmultipliers )
-        
         nXSecs = 0 ## count the xsecs we are adding
+        if self.reference_xsecs in [ "available", "only" ]:
+            nXSecs += self.retrieveReferenceXSecs( sqrtses, inputFile, ssmultipliers )
+        if self.reference_xsecs == "only":
+            return nXSecs
+        
         if tofile:
             logger.info("Computing SLHA cross section from %s, adding to "
                         "SLHA file." % inputFile )
@@ -324,6 +335,8 @@ class XSecComputer:
                 xcomment = str(self.nevents)+" events, [pb], pythia%d for LO"%\
                                               self.pythiaVersion
                 if tofile != False:
+                    ## FIXME check if higher orders are already in from 
+                    ## ref xsecs
                     nXSecs += self.addXSecToFile( self.xsecs, inputFile, xcomment, complain)
                     complain = False
             if nXSecs > 0: ## only add if we actually added xsecs
@@ -494,6 +507,16 @@ class ArgsStandardizer:
             return eval(multipliers)
         return multipliers
 
+    def getReferenceXSecFlags ( self, args ):
+        """ turn the flags about using reference cross sections
+            into the according XSecComputer argument """
+        ret = "never"
+        if args.reference_xsecs:
+            ret = "available"
+        if args.only_reference_xsecs:
+            ret = "only"
+        return ret
+
     def getInputFiles ( self, args ):
         """ geth the names of the slha files to run over """
         inputPath  = args.filename.strip()
@@ -596,6 +619,7 @@ def main(args):
     inputFiles = canonizer.getInputFiles ( args )
     ncpus = canonizer.checkNCPUs ( args.ncpus, inputFiles )
     pythiaVersion = canonizer.getPythiaVersion ( args )
+    reference_xsecs = canonizer.getReferenceXSecFlags ( args )
     ssmultipliers = None
     if hasattr ( args, "ssmultipliers" ):
         ssmultipliers = canonizer.getSSMultipliers ( args.ssmultipliers )
@@ -624,7 +648,7 @@ def main(args):
                        ( i, os.getpid(), os.getppid() ) )
             logger.debug ( " `-> %s" % " ".join ( chunk ) )
             computer = XSecComputer( order, args.nevents, pythiaVersion, \
-                                     not args.noautocompile, args.reference_xsecs )
+                                     not args.noautocompile, reference_xsecs )
             toFile = canonizer.writeToFile ( args )
             computer.computeForBunch (  sqrtses, chunk, not args.keep,
                           args.LOfromSLHA, toFile, pythiacard=pythiacard, \

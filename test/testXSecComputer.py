@@ -30,6 +30,30 @@ class XSecTest(unittest.TestCase):
 
     toolBox.ToolBox().compile() ## make sure the tools are compiled
 
+    def defaultNamespace ( self ):
+        """ define a default args namespace """
+        xargs = argparse.Namespace()
+        xargs.sqrts = [[8.,13.]]
+        xargs.ncpus = 1
+        xargs.noautocompile = True
+        xargs.nevents = 2000
+        #Compute LO xsecs:
+        xargs.query = False
+        xargs.NLL = False
+        xargs.NLO = False
+        xargs.LOfromSLHA = False
+        xargs.keep = False
+        xargs.tofile = True
+        xargs.alltofile = False
+        xargs.pythia6 = True
+        xargs.colors = False
+        xargs.ssmultipliers = None
+        xargs.reference_xsecs = False
+        xargs.only_reference_xsecs = False
+        xargs.verbosity = "warning"
+        #Compute LO cross sections
+        return xargs
+
     def testLOGlu(self):
         """ test the computation of LO cross section, pythia6 """
         self.logger.info ( "test LO xsecs @ 8 TeV" )
@@ -84,29 +108,9 @@ class XSecTest(unittest.TestCase):
         self.logger.info ("test NLL xsecs @ 8 and 13 TeV" )
         #Set overall options:
         #Options for cross section calculation:
-        xargs = argparse.Namespace()
-        xargs.sqrts = [[8.,13.]]
-        xargs.ncpus = 1
-        xargs.noautocompile = True
-        xargs.nevents = 2000
-        #Compute LO xsecs:
-        xargs.query = False
-        xargs.NLL = False
-        xargs.NLO = False
-        xargs.LOfromSLHA = False
-        xargs.keep = False
-        xargs.tofile = True
-        xargs.alltofile = False
-        xargs.pythia6 = True
+        xargs = self.defaultNamespace()
         xargs.filename = tmpfile
-        xargs.colors = False
-        xargs.ssmultipliers = None
-        xargs.reference_xsecs = False
-        xargs.only_reference_xsecs = False
-        xargs.verbosity = "warning"
-        #Compute LO cross sections
         xsecComputer.main(xargs)
-        #Compute NLL cross sections
         xargs.NLL = True
         xargs.LOfromSLHA = True
         xsecComputer.main(xargs)
@@ -142,27 +146,10 @@ class XSecTest(unittest.TestCase):
         self.logger.info ("test NLL xsecs @ 8 and 13 TeV" )
         #Set overall options:
         #Options for cross section calculation:
-        xargs = argparse.Namespace()
-        xargs.sqrts = [[8.,13.]]
-        xargs.ncpus = 1
-        xargs.noautocompile = True
+        xargs = self.defaultNamespace()
         xargs.nevents = 5000
-        #Compute LO xsecs:
-        xargs.query = False
-        xargs.NLL = False
-        xargs.NLO = False
-        xargs.LOfromSLHA = False
-        xargs.keep = False
-        xargs.tofile = True
-        xargs.alltofile = False
-        xargs.pythia6 = True
         xargs.filename = tmpfile
-        xargs.colors = False
-        xargs.reference_xsecs = False
-        xargs.only_reference_xsecs = False
         xargs.ssmultipliers = { (1000021,1000021): 4. }
-        # xargs.ssmultipliers = { 1000021: 2. }
-        xargs.verbosity = "warning"
         #Compute LO cross sections
         xsecComputer.main(xargs)
         #Compute NLL cross sections
@@ -201,27 +188,11 @@ class XSecTest(unittest.TestCase):
         self.logger.info ("test NLL xsecs @ 8 and 13 TeV" )
         #Set overall options:
         #Options for cross section calculation:
-        xargs = argparse.Namespace()
-        xargs.sqrts = [[8.,13.]]
-        xargs.noautocompile = True
-        xargs.ncpus = 1
+        xargs = self.defaultNamespace()
         xargs.nevents = 5000
-        #Compute LO xsecs:
-        xargs.query = False
-        xargs.NLL = False
-        xargs.NLO = False
-        xargs.LOfromSLHA = False
-        xargs.keep = False
-        xargs.tofile = True
-        xargs.alltofile = False
-        xargs.pythia6 = True
         xargs.filename = tmpfile
-        xargs.colors = False
-        xargs.reference_xsecs = False
-        xargs.only_reference_xsecs = False
         xargs.ssmultipliers = { ('*100002?','*1000021'): 4. }
         # xargs.ssmultipliers = { 1000021: 2. }
-        xargs.verbosity = "warning"
         #Compute LO cross sections
         xsecComputer.main(xargs)
         #Compute NLL cross sections

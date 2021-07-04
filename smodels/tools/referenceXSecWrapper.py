@@ -15,6 +15,7 @@ from smodels.tools.wrapperBase import WrapperBase
 from smodels.tools import wrapperBase
 from smodels.tools.smodelsLogging import logger, setLogLevel
 from smodels.tools.physicsUnits import fb, pb, TeV, mb
+from smodels.theory.crossSection import LO, NLO, NLL, NNLL
 from smodels.theory import crossSection
 from smodels import installation
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
@@ -72,11 +73,14 @@ class ReferenceXSecWrapper:
         xsec.info = crossSection.XSectionInfo ( D["sqrts"]*TeV, D["order"], D["label"] )
         return xsec
 
-    def run( self, slhafile, ssmultipliers ):
+    def run( self, slhafile, ssmultipliers = None ):
         """
         Retrieve cross sections
 
         :param slhafile: SLHA file
+        :param ssmultipliers: optionally supply signal strengh multipliers,
+                given as dictionary of the tuple of the mothers' pids as keys and
+                multipliers as values, e.g { (1000001,1000021):1.1 }.
         :returns: List of cross sections to be added
         """
         channels = self.findOpenChannels ( slhafile )
@@ -88,9 +92,11 @@ class ReferenceXSecWrapper:
                 xsecall,order,comment = self.getXSecsFor ( pids[0], pids[1], sqrts, "" )
                 ## interpolate for the mass that we are looking for
                 xsec = self.interpolate ( channel["masses"][0], xsecall )
-                if ( pids[1], pids[0] ) in ssmultipliers:
+                if xsec == None:
+                    continue
+                if ssmultipliers != None and ( pids[1], pids[0] ) in ssmultipliers:
                     pids = ( pids[1], pids[0] )
-                if pids in ssmultipliers:
+                if ssmultipliers != None and pids in ssmultipliers:
                     ssm = ssmultipliers[pids]
                     channel["ssm"] = ssm
                     xsec = xsec * ssm
@@ -191,50 +197,50 @@ class ReferenceXSecWrapper:
             filename = "xsecgluino%d.txt" % sqrts
             columns["xsec"]=2
             isEWK=False
-            order = 2 # 4
+            order = NNLL # 4
         if pid1 in [ -1000024 ] and pid2 in [ 1000023 ]:
             filename = "xsecN2C1m%d.txt" % sqrts
-            order = 2
+            order = NLL
             isEWK=True
             pb = False
         if pid1 in [ 1000023 ] and pid2 in [ 1000024 ]:
             filename = "xsecN2C1p%d.txt" % sqrts
-            order = 2
+            order = NLL
             pb = False
             isEWK=True
         if pid1 in [ 1000023 ] and pid2 in [ 1000023 ]:
             filename = "xsecN2N1p%d.txt" % sqrts
-            order = 2
+            order = NLL
             pb = False
             isEWK=True
         if pid1 in [ 1000024 ] and pid2 in [ 1000025 ]:
             filename = "xsecN2C1p%d.txt" % sqrts
-            order = 2
+            order = NLL
             pb = False
             isEWK=True
         if pid1 in [ -1000024 ] and pid2 in [ 1000025 ]:
             filename = "xsecN2C1m%d.txt" % sqrts
-            order = 2
+            order = NLL
             isEWK=True
             pb = False
         if pid1 in [ -1000005, -1000006, -2000006 ] and pid2 == -pid1:
             ## left handed slep- slep+ production.
             filename = "xsecstop%d.txt" % sqrts
-            order = 2 #3
+            order = NNLL #3
             columns["xsec"]=2
             pb = True
         if pid1 in [ -1000024 ] and pid2 == -pid1:
             ## left handed slep- slep+ production.
             filename = "xsecC1C1%d.txt" % sqrts
-            order = 2 #3
+            order = NLL #3
             pb = False
         if pid1 in [ -1000011, -1000013, -1000015 ] and pid2 == -pid1:
             ## left handed slep- slep+ production.
             filename = "xsecslepLslepL%d.txt" % sqrts
-            order = 2 #3
+            order = NLL #3
         if pid1 in [ -2000011, -2000013, -2000015 ] and pid2 == -pid1:
             filename = "xsecslepRslepR%d.txt" % sqrts
-            order = 2 # 3
+            order = NLL # 3
         if filename == None:
             logger.info ( "could not identify filename for xsecs" )
             logger.info ( "seems like we dont have ref xsecs for the pids %d/%d?" % ( pid1, pid2 ) )

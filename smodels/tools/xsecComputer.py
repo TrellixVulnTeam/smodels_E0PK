@@ -14,7 +14,7 @@ from smodels import installation
 from smodels.tools import toolBox, runtime
 from smodels.tools.physicsUnits import pb, TeV, GeV
 from smodels.theory import crossSection
-from smodels.theory.crossSection import LO, NLO, NLL
+from smodels.theory.crossSection import LO, NLO, NLL, NNLL
 from smodels.tools.smodelsLogging import logger, setLogLevel
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 import os, copy
@@ -27,8 +27,8 @@ import sys
 
 class XSecComputer:
     """ cross section computer class, what else? """
-    def __init__ ( self, maxOrder=NLL, nevents=0, pythiaVersion=8, maycompile=True,
-                   reference_xsecs = "never" ):
+    def __init__ ( self, maxOrder=NLL, nevents=10000, pythiaVersion=8, maycompile=True,
+                   reference_xsecs = "never", force_overwrite = False ):
         """
         :param maxOrder: maximum order to compute the cross section, given as an integer
                     if maxOrder == LO, compute only LO pythia xsecs
@@ -37,10 +37,11 @@ class XSecComputer:
         :param nevents: number of events for pythia run
         :param pythiaVersion: pythia6 or pythia8 (integer)
         :param maycompile: if True, then tools can get compiled on-the-fly
-        :param reference_xsecs: "never", "available", "only"  
+        :param reference_xsecs: "never", "available", "only"
                     use reference cross sections? "only" means, use only reference cross
-                    sections, never pythia. "never" means never use reference cross 
+                    sections, never pythia. "never" means never use reference cross
                     sections. "available" means use them when available, else use pythia.
+        :param force_overwrite: if true, then overwrite existing xsecs
         """
         self.maxOrder = self._checkMaxOrder ( maxOrder )
         if reference_xsecs not in [ "only", "available", "never" ]:
@@ -48,6 +49,7 @@ class XSecComputer:
             logger.error ( line )
             raise SModelSError ( line )
         self.reference_xsecs = reference_xsecs
+        self.force_overwrite = force_overwrite
         self.countNoXSecs = 0
         self.countNoNLOXSecs = 0
         self.maycompile = maycompile
@@ -302,7 +304,7 @@ class XSecComputer:
         :param inputFile: input SLHA file to compute xsecs for
         :param unlink: if False, keep temporary files
         :param lofromSLHA: try to obtain LO xsecs from SLHA file itself
-        :param tofile: False, True, "all": write results to file, 
+        :param tofile: False, True, "all": write results to file,
                        if "all" also write lower xsecs to file.
         :param pythiacard: optionally supply your own runcard
         :param ssmultipliers: optionally supply signal strengh multipliers,
@@ -317,11 +319,13 @@ class XSecComputer:
             nXSecs += self.retrieveReferenceXSecs( sqrtses, inputFile, ssmultipliers )
         if self.reference_xsecs == "only":
             return nXSecs
-        
+
         if tofile:
             logger.info("Computing SLHA cross section from %s, adding to "
                         "SLHA file." % inputFile )
             complain = True ## dont complain about already existing xsecs,
+            if self.force_overwrite:
+                complain = False
             # if we were the ones writing them
             for s in sqrtses:
                 ss = s*TeV
@@ -335,7 +339,7 @@ class XSecComputer:
                 xcomment = str(self.nevents)+" events, [pb], pythia%d for LO"%\
                                               self.pythiaVersion
                 if tofile != False:
-                    ## FIXME check if higher orders are already in from 
+                    ## FIXME check if higher orders are already in from
                     ## ref xsecs
                     nXSecs += self.addXSecToFile( self.xsecs, inputFile, xcomment, complain)
                     complain = False
@@ -413,6 +417,19 @@ class XSecComputer:
         outfile.write ( "\n" )
         outfile.close()
 
+    def removeXSecBlocks ( self, slhafile ):
+        """ remove all xsecs, if sqrts is not zero, then remove all of a certain sqrts """
+        f = open ( slhafile, "rt" )
+        lines = f.readlines()
+        f.close()
+        g = open ( slhafile, "wt" )
+        for line in lines:
+            if "Signal strength" in line:
+                continue
+            if "XSECTION" in line:
+                break
+            g.write ( line )
+
     def addXSecToFile( self, xsecs, slhafile, comment=None, complain=True):
         """
         Write cross sections to an SLHA file.
@@ -437,9 +454,12 @@ class XSecComputer:
             return False
         # Check if file already contain cross section blocks
         xSectionList = crossSection.getXsecFromSLHAFile(slhafile)
-        if xSectionList and complain:
+        if xSectionList and complain and not self.force_overwrite:
             logger.info("SLHA file already contains XSECTION blocks. Adding "
                            "only missing cross sections.")
+        if self.force_overwrite:
+            xSectionList = []
+            self.removeXSecBlocks ( slhafile )
 
         # Write cross sections to file, if they do not overlap any cross section in
         # the file
@@ -648,7 +668,7 @@ def main(args):
                        ( i, os.getpid(), os.getppid() ) )
             logger.debug ( " `-> %s" % " ".join ( chunk ) )
             computer = XSecComputer( order, args.nevents, pythiaVersion, \
-                                     not args.noautocompile, reference_xsecs )
+                        not args.noautocompile, reference_xsecs, args.force_overwrite )
             toFile = canonizer.writeToFile ( args )
             computer.computeForBunch (  sqrtses, chunk, not args.keep,
                           args.LOfromSLHA, toFile, pythiacard=pythiacard, \

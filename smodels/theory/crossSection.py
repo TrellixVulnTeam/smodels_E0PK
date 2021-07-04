@@ -15,7 +15,7 @@ from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 from smodels.tools.smodelsLogging import logger
 
 ## orders in perturbation theory
-LO,NLO,NLL = range(3)
+LO,NLO,NLL,NNLL = range(4)
 
 class XSectionInfo(object):
     """

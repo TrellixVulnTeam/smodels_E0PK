@@ -35,6 +35,7 @@ class XSecTest(unittest.TestCase):
         xargs = argparse.Namespace()
         xargs.sqrts = [[8.,13.]]
         xargs.ncpus = 1
+        xargs.force_overwrite = False
         xargs.noautocompile = True
         xargs.nevents = 2000
         #Compute LO xsecs:
@@ -63,6 +64,19 @@ class XSecTest(unittest.TestCase):
         # print ( w )
         w8lo= w[(1000021, 1000021)]['8 TeV (LO)'].asNumber( fb )
         self.assertAlmostEqual(w8lo/264., 1., 2 ) 
+
+    def testReferenceXSec(self):
+        """ test the computation of LO cross section, using
+            the reference cross sections """
+        self.logger.info ( "test LO xsecs @ 8 TeV" )
+        slhafile= "./testFiles/slha/simplyGluino.slha"
+        computer = xsecComputer.XSecComputer ( reference_xsecs = "only" )
+        w = computer.compute(13*TeV, slhafile ).getDictionary()
+        w13lo= w[(1000021, 1000021)]['13 TeV (NLO+NLL)'].asNumber( fb )
+        self.assertAlmostEqual(w13lo/4417.278432, 1., 2 ) 
+        w = computer.compute(8*TeV, slhafile ).getDictionary()
+        w8lo= w[(1000021, 1000021)]['8 TeV (NLO+NLL)'].asNumber( fb )
+        self.assertAlmostEqual(w8lo/562.93121, 1., 2 ) 
 
     def testNLLGlu(self):
         """ test the computation of NLL cross section """

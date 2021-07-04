@@ -53,6 +53,8 @@ def main():
         help="use the reference cross sections if possible")
     xseccomputer.add_argument('-R', '--only_reference_xsecs', action='store_true',
         help="use *only* reference cross sections")
+    xseccomputer.add_argument('-o', '--force_overwrite', action='store_true',
+        help="force overwrite of older xsecs already in file")
     xseccomputer.add_argument('-n', '--NLO', action='store_true',
         help="compute at the NLO level (default is LO)")
     xseccomputer.add_argument('-N', '--NLL', help="compute at the NLO+NLL level (takes precedence over NLO, default is LO)", action='store_true')

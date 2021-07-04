@@ -276,9 +276,13 @@ class XSecComputer:
         # FIXME implement
         refxsec = toolBox.ToolBox().get("refxsec" )
         refxsec.sqrtses = sqrtses
-        xsecs = refxsec.run ( inputfile )
+        xsecs = refxsec.run ( inputFile )
+        nXSecs = 0
+        complain = True
+        xcomment = "reference cross sections v1.0 [pb]"
+        nXSecs += self.addXSecToFile( xsecs, inputFile, xcomment, complain )
 
-        return 0
+        return len(xsecs)
 
     def computeForOneFile ( self, sqrtses, inputFile, unlink,
                             lOfromSLHA, tofile, pythiacard = None,
@@ -299,6 +303,8 @@ class XSecComputer:
 
         :returns: number of xsections that have been computed
         """
+        if self.reference_xsecs == True:
+            return self.retrieveReferenceXSecs( sqrtses, inputFile, ssmultipliers )
         
         nXSecs = 0 ## count the xsecs we are adding
         if tofile:

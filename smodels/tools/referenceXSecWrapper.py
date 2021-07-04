@@ -15,6 +15,7 @@ from smodels.tools.wrapperBase import WrapperBase
 from smodels.tools import wrapperBase
 from smodels.tools.smodelsLogging import logger, setLogLevel
 from smodels.tools.physicsUnits import fb, pb, TeV, mb
+from smodels.theory import crossSection
 from smodels import installation
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 import os, sys, io, shutil, pyslha
@@ -62,6 +63,14 @@ class ReferenceXSecWrapper:
         ret = "tool: %s\n" % (self.name)
         return ret
 
+    def dictToXSection ( self, D ):
+        """ create an XSection object from dictionary D """
+        xsec = crossSection.XSection()
+        xsec.value = D["xsec"]*pb
+        xsec._pid = D["pids"]
+        xsec.info = crossSection.XSectionInfo ( D["sqrts"]*TeV, D["order"], D["label"] )
+        return xsec
+
     def run( self, slhafile ): ## , lhefile=None, unlink=True ):
         """
         Retrieve cross sections
@@ -74,11 +83,16 @@ class ReferenceXSecWrapper:
         for channel in channels:
             # obtain xsecs for all masses, but for the given channel
             for sqrts in self.sqrtses:
-                xsecall,order,comment = self.getXSecsFor ( channel[0], channel[1], sqrts, "" )
+                pids = channel["pids"]
+                xsecall,order,comment = self.getXSecsFor ( pids[0], pids[1], sqrts, "" )
                 ## interpolate for the mass that we are looking for
-                masses = ( channel[2], channel[3] )
-                xsec = self.interpolate ( masses[0], xsecall )
-                xsecs.append ( xsec )
+                xsec = self.interpolate ( channel["masses"][0], xsecall )
+                channel["xsec"] = xsec
+                channel["sqrts"] = sqrts
+                channel["order"] = order
+                channel["comment"] = comment
+                channel["label"] = f"{sqrts} TeV NLL (ref)"
+                xsecs.append ( self.dictToXSection ( channel ) )
         return xsecs
 
     def findOpenChannels ( self, slhafile ):
@@ -104,14 +118,14 @@ class ReferenceXSecWrapper:
                 continue
 
             if pid in samesignmodes:
-                channels.append ( (pid,pid, mass, mass ) )
+                channels.append ( { "pids": (pid,pid), "masses": ( mass, mass ) } )
             if pid in oppositesignmodes:
-                channels.append ( (-pid,pid, mass, mass ) )
+                channels.append ( { "pids": (-pid,pid), "masses": ( mass, mass ) } )
             for jpid, jmass in masses.items():
                 if pid == jpid:
                     continue
                 if (pid,jpid) in associateproductions:
-                    channels.append ( (pid,jpid, mass, jmass ) )
+                    channels.append ( { "pids": (pid,jpid), "masses": (mass, jmass ) } )
 
         return channels
 

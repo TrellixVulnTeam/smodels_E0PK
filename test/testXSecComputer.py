@@ -68,7 +68,7 @@ class XSecTest(unittest.TestCase):
     def testReferenceXSec(self):
         """ test the computation of LO cross section, using
             the reference cross sections """
-        self.logger.info ( "test LO xsecs @ 8 TeV" )
+        self.logger.info ( "test reference xsecs" )
         slhafile= "./testFiles/slha/simplyGluino.slha"
         computer = xsecComputer.XSecComputer ( reference_xsecs = "only" )
         w = computer.compute(13*TeV, slhafile ).getDictionary()

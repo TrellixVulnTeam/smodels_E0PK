@@ -80,9 +80,10 @@ class XSecComputer:
         return sqrts
 
     def _checkMaxOrder ( self, maxOrder ):
-        smaxorder={ "LO": 0, "NLO": 1, "NLL": 2 }
-        if maxOrder in smaxorder.keys():
+        smaxorder={ "LO": 0, "NLO": 1, "NLL": 2, "NNLL": 3 }
+        if type(maxOrder)==str:
             logger.warning("maxorder given as string, please supply integer.")
+            maxOrder = crossSection.stringToOrder ( maxOrder )
             maxOrder=smaxorder[maxOrder]
         return maxOrder
 
@@ -90,12 +91,7 @@ class XSecComputer:
         """ add higher order xsecs """
         xsecs = copy.deepcopy ( self.loXsecs )
         wlabel = str(int(sqrts / TeV)) + ' TeV'
-        if self.maxOrder == LO:
-            wlabel += ' (LO)'
-        elif self.maxOrder == NLO:
-            wlabel += ' (NLO)'
-        elif self.maxOrder == NLL:
-            wlabel += ' (NLO+NLL)'
+        wlabel += f' ({crossSection.orderToString(self.maxOrder)})'
         for ixsec, xsec in enumerate(xsecs):
             xsecs[ixsec].info.label = wlabel
             xsecs[ixsec].info.order = self.maxOrder

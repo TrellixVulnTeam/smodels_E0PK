@@ -17,6 +17,26 @@ from smodels.tools.smodelsLogging import logger
 ## orders in perturbation theory
 LO,NLO,NLL,NNLL = range(4)
 
+def orderToString ( order ):
+    """ return the string that describes the perturbation order """
+    if order == LO:
+        return "LO"
+    if order == NLO:
+        return "NLO"
+    if order == NLL:
+        return "NLO+NLL"
+    if order == NNLL:
+        return "NLO+NLL+NNLL"
+    return "?"
+
+def stringToOrder ( strng ):
+    """ from a string describing the order return the perturbation order """
+    order={ "LO": LO, "NLO": NLO, "NLL": NLL, "NNLL": NNLL,
+            "NLO+NLL": NLL, "NLO+NLL+NNLL": NNLL }
+    if strng in order:
+        return order[strng]
+    return -1
+
 class XSectionInfo(object):
     """
     An instance of this class represents information regarding a cross section.

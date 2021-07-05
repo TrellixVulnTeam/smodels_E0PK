@@ -71,11 +71,11 @@ class XSecTest(unittest.TestCase):
         slhafile= "./testFiles/slha/simplyGluino.slha"
         computer = xsecComputer.XSecComputer ( reference_xsecs = "only" )
         w = computer.compute(13*TeV, slhafile ).getDictionary()
-        w13lo= w[(1000021, 1000021)]['13 TeV (NLO+NLL)'].asNumber( fb )
-        self.assertAlmostEqual(w13lo/4417.278432, 1., 2 ) 
+        w13lo= w[(1000021, 1000021)]['13 TeV (NLO+NLL+NNLL)'].asNumber( fb )
+        self.assertAlmostEqual(w13lo/5440., 1., 2 ) 
         w = computer.compute(8*TeV, slhafile ).getDictionary()
-        w8lo= w[(1000021, 1000021)]['8 TeV (NLO+NLL)'].asNumber( fb )
-        self.assertAlmostEqual(w8lo/562.93121, 1., 2 ) 
+        w8lo= w[(1000021, 1000021)]['8 TeV (NLO+NLL+NNLL)'].asNumber( fb )
+        self.assertAlmostEqual(w8lo/566.24, 1., 2 ) 
 
     def testNLLGlu(self):
         """ test the computation of NLL cross section """

@@ -14,7 +14,7 @@ from __future__ import print_function
 from smodels.tools.wrapperBase import WrapperBase
 from smodels.tools import wrapperBase
 from smodels.tools.smodelsLogging import logger, setLogLevel
-from smodels.tools.physicsUnits import fb, pb, TeV, mb
+from smodels.tools.physicsUnits import fb, pb, TeV, mb, unum
 from smodels.theory.crossSection import LO, NLO, NLL, NNLL
 from smodels.theory import crossSection
 from smodels import installation
@@ -31,9 +31,25 @@ class ReferenceXSecWrapper:
         """ we dont derive from WrapperBase because it is not really a wrapper.
             It's something simpler. """
         self.name = "refxsec"
-        self.sqrtses = [ 13 ]
+        self._sqrtses = [ 13 ]
         self.shareDir = os.path.join ( installation.installDirectory(), \
                                        "smodels", "share", "refxsecs" )
+
+    @property
+    def sqrtses(self):
+        """ sqrtses, constructed to take all kinds of inputs """
+        return self._sqrtses 
+
+    @sqrtses.setter
+    def sqrtses(self,value):
+        if type(value) == unum.Unum:
+            self._sqrtses = [ value.asNumber(TeV) ]
+        if type(value) == list:
+            self._sqrtses = []
+            for i in value:
+                if type(i) == unum.Unum:
+                    i = i.asNumber(TeV)
+                self._sqrtses.append ( i )
 
     def installDirectory ( self ):
         """ not really needed. """
@@ -104,7 +120,8 @@ class ReferenceXSecWrapper:
                 channel["sqrts"] = sqrts
                 channel["order"] = order
                 channel["comment"] = comment
-                channel["label"] = f"{sqrts} TeV (ref:{orderToSring(order,True,False)})"
+                orderStr = crossSection.orderToString(order,False,False)
+                channel["label"] = f"{int(sqrts)} TeV ({orderStr})"
                 xsecs.add ( self.dictToXSection ( channel ) )
         return xsecs
 

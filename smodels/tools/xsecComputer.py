@@ -232,6 +232,12 @@ class XSecComputer:
         sqrts = self._checkSqrts( sqrts )
         self._checkSLHA ( slhafile )
 
+        if self.reference_xsecs in [ "available", "only" ]:
+            self.retrieveReferenceXSecs( sqrts, slhafile, ssmultipliers )
+        if self.reference_xsecs == "only":
+            return self.xsecs
+
+
         if lhefile:
             if os.path.isfile(lhefile):
                 logger.warning("Using LO cross sections from " + lhefile)
@@ -271,7 +277,7 @@ class XSecComputer:
         """
         Retrieve the reference cross sections
 
-        :param sqrtses: list of sqrt{s} tu run pythia, as a unum (e.g. [7*TeV])
+        :param sqrtses: sqrtses to run pythia, as a unum (e.g. [7*TeV])
         :param inputFile: input SLHA file to compute xsecs for
         :param ssmultipliers: optionally supply signal strengh multipliers,
                           given as dictionary of the tuple of the mothers' pids as keys and
@@ -280,15 +286,7 @@ class XSecComputer:
         """
         refxsec = toolBox.ToolBox().get("refxsec" )
         refxsec.sqrtses = sqrtses
-        xsecs = refxsec.run ( inputFile, ssmultipliers )
-        nXSecs = 0
-        complain = True
-        ver = refxsec.version
-        xcomment = f"reference cross sections v{ver} [pb]"
-        ### FIXME take into account multipliers
-        nXSecs += self.addXSecToFile( xsecs, inputFile, xcomment, complain )
-
-        return len(xsecs)
+        self.xsecs = refxsec.run ( inputFile, ssmultipliers )
 
     def computeForOneFile ( self, sqrtses, inputFile, unlink,
                             lOfromSLHA, tofile, pythiacard = None,
@@ -310,11 +308,7 @@ class XSecComputer:
 
         :returns: number of xsections that have been computed
         """
-        nXSecs = 0 ## count the xsecs we are adding
-        if self.reference_xsecs in [ "available", "only" ]:
-            nXSecs += self.retrieveReferenceXSecs( sqrtses, inputFile, ssmultipliers )
-        if self.reference_xsecs == "only":
-            return nXSecs
+        nXSecs = 0
 
         if tofile:
             logger.info("Computing SLHA cross section from %s, adding to "

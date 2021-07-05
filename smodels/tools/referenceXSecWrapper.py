@@ -84,7 +84,7 @@ class ReferenceXSecWrapper:
         :returns: List of cross sections to be added
         """
         channels = self.findOpenChannels ( slhafile )
-        xsecs = []
+        xsecs = crossSection.XSectionList()
         for channel in channels:
             # obtain xsecs for all masses, but for the given channel
             for sqrts in self.sqrtses:
@@ -104,8 +104,8 @@ class ReferenceXSecWrapper:
                 channel["sqrts"] = sqrts
                 channel["order"] = order
                 channel["comment"] = comment
-                channel["label"] = f"{sqrts} TeV NLL (ref)"
-                xsecs.append ( self.dictToXSection ( channel ) )
+                channel["label"] = f"{sqrts} TeV (ref:{orderToSring(order,True,False)})"
+                xsecs.add ( self.dictToXSection ( channel ) )
         return xsecs
 
     def findOpenChannels ( self, slhafile ):

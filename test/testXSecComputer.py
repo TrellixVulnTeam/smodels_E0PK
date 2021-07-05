@@ -66,8 +66,7 @@ class XSecTest(unittest.TestCase):
         self.assertAlmostEqual(w8lo/264., 1., 2 ) 
 
     def testReferenceXSec(self):
-        """ test the computation of LO cross section, using
-            the reference cross sections """
+        """ test the computation of reference cross sections """
         self.logger.info ( "test reference xsecs" )
         slhafile= "./testFiles/slha/simplyGluino.slha"
         computer = xsecComputer.XSecComputer ( reference_xsecs = "only" )

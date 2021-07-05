@@ -107,6 +107,8 @@ class ReferenceXSecWrapper:
                 pids = channel["pids"]
                 xsecall,order,comment = self.getXSecsFor ( pids[0], pids[1], sqrts, "" )
                 ## interpolate for the mass that we are looking for
+                if xsecall == None:
+                    continue
                 xsec = self.interpolate ( channel["masses"][0], xsecall )
                 if xsec == None:
                     continue
@@ -261,7 +263,8 @@ class ReferenceXSecWrapper:
         if filename == None:
             logger.info ( "could not identify filename for xsecs" )
             logger.info ( "seems like we dont have ref xsecs for the pids %d/%d?" % ( pid1, pid2 ) )
-            sys.exit()
+            return None, None, None
+            # sys.exit()
         if ewk == "hino":
             filename = filename.replace(".txt","hino.txt" )
         if isEWK:

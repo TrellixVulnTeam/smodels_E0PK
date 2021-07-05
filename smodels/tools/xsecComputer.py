@@ -286,7 +286,21 @@ class XSecComputer:
         """
         refxsec = toolBox.ToolBox().get("refxsec" )
         refxsec.sqrtses = sqrtses
-        self.xsecs = refxsec.run ( inputFile, ssmultipliers )
+        xsecs = refxsec.run ( inputFile, ssmultipliers )
+        if not self.force_overwrite and self.reference_xsecs == "available":
+            # if not forcing an overwrite, and only available ref xsecs
+            # are requested then initialise the xsec list whats already in the file
+            try:
+                xSectionList = crossSection.getXsecFromSLHAFile(inputFile )
+                if xSectionList != None:
+                    self.xsecs = xSectionList
+            except SModelSError as e:
+                pass
+        
+        if hasattr ( self, "xsecs" ) and not self.force_overwrite:
+            self.xsecs += xsecs
+        else:
+            self.xsecs = xsecs
 
     def computeForOneFile ( self, sqrtses, inputFile, unlink,
                             lOfromSLHA, tofile, pythiacard = None,

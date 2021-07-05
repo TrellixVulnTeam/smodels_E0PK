@@ -77,6 +77,20 @@ class XSecTest(unittest.TestCase):
         w8lo= w[(1000021, 1000021)]['8 TeV (NLO+NLL+NNLL)'].asNumber( fb )
         self.assertAlmostEqual(w8lo/566.24, 1., 2 ) 
 
+    def testOverwrite(self):
+        """ test the overwrite feature """
+        self.logger.info ( "test reference xsecs" )
+        slhafile= "./testFiles/slha/complicated.slha"
+        computer = xsecComputer.XSecComputer ( reference_xsecs = "available" )
+        w = computer.compute(13*TeV, slhafile ).getDictionary()
+        ## w should contain a long list of NLL results, from the squarks
+        self.assertTrue ( len( w ) == 107 )
+        computer = xsecComputer.XSecComputer ( reference_xsecs = "only" )
+        w = computer.compute(13*TeV, slhafile ).getDictionary()
+        ## assuming squarks have not yet implemented, the list should be
+        ## short and contain sbottoms, stops and gluinos only
+        self.assertTrue ( len( w )  == 3 )
+
     def testNLLGlu(self):
         """ test the computation of NLL cross section """
         self.logger.info ( "test NLL xsecs @ 8 TeV" )

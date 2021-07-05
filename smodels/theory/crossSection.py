@@ -17,16 +17,26 @@ from smodels.tools.smodelsLogging import logger
 ## orders in perturbation theory
 LO,NLO,NLL,NNLL = range(4)
 
-def orderToString ( order ):
-    """ return the string that describes the perturbation order """
+def orderToString ( order, short=False, raise_error=False ):
+    """ return the string that describes the perturbation order 
+    :param short: if true, return a short version of string
+    :param raise_error: if true, raise exception if order is not know
+    """
     if order == LO:
         return "LO"
     if order == NLO:
         return "NLO"
     if order == NLL:
+        if short:
+            return "NLL"
         return "NLO+NLL"
     if order == NNLL:
+        if short:
+            return "NNLL"
         return "NLO+NLL+NNLL"
+    if raise_error:
+        line = "Unknown QCD order %d" % order
+        raise SModelSError ( line )
     return "?"
 
 def stringToOrder ( strng ):
@@ -109,7 +119,7 @@ class XSection(object):
     This class is used to store the information of a single cross section
     (value, particle ids, center of mass, order and label).
 
-    order = 0 (LO), 1 (NLO) or 2 (NLL).
+    order = 0 (LO), 1 (NLO), 2 (NLL), or 3 (NNLL).
 
     """
     def __init__(self):
@@ -641,15 +651,7 @@ def getXsecFromSLHAFile(slhafile, useXSecs=None, xsecUnit = pb):
         for pxsec in process.xsecs:
             csOrder = pxsec.qcd_order
             wlabel = str( int ( pxsec.sqrts / 1000) ) + ' TeV'
-            if csOrder == 0:
-                wlabel += ' (LO)'
-            elif csOrder == 1:
-                wlabel += ' (NLO)'
-            elif csOrder == 2:
-                wlabel += ' (NLL)'
-            else:
-                logger.error ( "Unknown QCD order %d" % csOrder )
-                raise SModelSError()
+            wlabel += f" ({orderToString(csOrder,True,True)})"
             xsec = XSection()
             xsec.info.sqrts = pxsec.sqrts/1000. * TeV
             xsec.info.order = csOrder
@@ -714,12 +716,7 @@ def getXsecFromLHEFile(lhefile, addEvents=True):
             # Assume LO xsecs, if not defined in the reader
             xsec.info.order = 0
         wlabel = str( sqrtS / TeV ) + ' TeV'
-        if xsec.info.order == LO:
-            wlabel += ' (LO)'
-        elif xsec.info.order == NLO:
-            wlabel += ' (NLO)'
-        elif xsec.info.order == NLL:
-            wlabel += ' (NLL)'
+        wlabel += f' ({orderToString(xsec.info.order,True,False)})'
         xsec.info.label = wlabel
         xsec.value = 0. * pb
         xsec.pid = pid

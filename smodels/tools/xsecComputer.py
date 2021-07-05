@@ -49,6 +49,7 @@ class XSecComputer:
             logger.error ( line )
             raise SModelSError ( line )
         self.reference_xsecs = reference_xsecs
+        self._checkCache()
         self.force_overwrite = force_overwrite
         self.countNoXSecs = 0
         self.countNoNLOXSecs = 0
@@ -202,14 +203,57 @@ class XSecComputer:
                 newx.add(x)
         return newx
 
+    def cleanSLHAFile ( self, slhafile ):
+        """ clean up F, if needed. remove double newlines """
+        f=open(slhafile,"rt")
+        lines=f.readlines()
+        f.close()
+        f=open(slhafile,"wt")
+        newline = False
+        for line in lines:
+            #if "Signal strength multipliers" in line:
+            #    continue
+            if newline and line == "\n":
+                continue
+            if line == "\n":
+                newline = True
+            else:
+                newline = False
+            f.write ( line )
+        f.close()
+
     def getPythia ( self ):
         """ returns the pythia tool that is configured to be used """
         ret= toolBox.ToolBox().get("pythia%d" % self.pythiaVersion )
         ret.maycompile = self.maycompile
         return ret
 
+    def removeRefXSecs ( self, xseclist ):
+        """ remove from xsec list entries that we already have reference 
+            xsecs for """
+        if not hasattr ( self, "xsecs" ):
+            return xseclist
+        keeplist = crossSection.XSectionList()
+        for xsec in xseclist:
+            keep = True
+            for refxsec in self.xsecs:
+                if refxsec.pid == xsec.pid and abs ( refxsec.info.sqrts - xsec.info.sqrts ).asNumber(GeV) < .1 and \
+                   refxsec.info.order > xsec.info.order:
+                        keep = False
+            if keep:
+                keeplist.add ( xsec )
+        return keeplist
+
+    def _checkCache ( self ):
+        """ some information gets cached, initalize the cache if necessary """
+        if not hasattr ( self, "xsecs" ):
+            self.xsecs = crossSection.XSectionList()
+        if not hasattr ( self, "comments" ):
+            self.comments = {}
+
     def compute ( self, sqrts, slhafile,  lhefile=None, unlink=True, loFromSlha=None,
                   pythiacard=None, ssmultipliers=None ):
+
         """
         Run pythia and compute SUSY cross sections for the input SLHA file.
 
@@ -231,12 +275,12 @@ class XSecComputer:
         """
         sqrts = self._checkSqrts( sqrts )
         self._checkSLHA ( slhafile )
+        self._checkCache()
 
         if self.reference_xsecs in [ "available", "only" ]:
             self.retrieveReferenceXSecs( sqrts, slhafile, ssmultipliers )
         if self.reference_xsecs == "only":
             return self.xsecs
-
 
         if lhefile:
             if os.path.isfile(lhefile):
@@ -264,9 +308,13 @@ class XSecComputer:
             loXsecs = tool.run( slhafile, lhefile, unlink=unlink )
             if ssmultipliers != None:
                 loXsecs = self.applyMultipliers ( loXsecs, ssmultipliers )
-        self.loXsecs = loXsecs
+        self.loXsecs = self.removeRefXSecs ( loXsecs )
+        for lox in loXsecs:
+            self.comments[str(lox)] = f"{self.nevents} evts, pythia{self.pythiaVersion} [pb]"
         self.loXsecs.sort()
-        self.xsecs = self.addHigherOrders ( sqrts, slhafile )
+        self.xsecs = self.removeRefXSecs ( self.addHigherOrders ( sqrts, slhafile ) )
+        for xsec in self.xsecs:
+            self.comments[str(xsec)] = f"{self.nevents} evts [pb], pythia{self.pythiaVersion} for LO"
         self.xsecs.sort()
         #for xsec in self.loXsecs:
         #    logger.debug ( "now writing out xsecs: %s" % xsec.value )
@@ -287,7 +335,10 @@ class XSecComputer:
         refxsec = toolBox.ToolBox().get("refxsec" )
         refxsec.sqrtses = sqrtses
         xsecs = refxsec.run ( inputFile, ssmultipliers )
-        if not self.force_overwrite and self.reference_xsecs == "available":
+        for xsec in xsecs:
+            self.comments[str(xsec)] = f"reference cross section v{refxsec.version} [pb]"
+        if not hasattr ( self, "xsecs") and not self.force_overwrite and \
+                         self.reference_xsecs == "available":
             # if not forcing an overwrite, and only available ref xsecs
             # are requested then initialise the xsec list whats already in the file
             try:
@@ -297,7 +348,7 @@ class XSecComputer:
             except SModelSError as e:
                 pass
         
-        if hasattr ( self, "xsecs" ) and not self.force_overwrite:
+        if hasattr ( self, "xsecs" ): # and not self.force_overwrite:
             self.xsecs += xsecs
         else:
             self.xsecs = xsecs
@@ -322,8 +373,9 @@ class XSecComputer:
 
         :returns: number of xsections that have been computed
         """
+        self.xsecs = crossSection.XSectionList()
+        self.comments = {}
         nXSecs = 0
-
         if tofile:
             logger.info("Computing SLHA cross section from %s, adding to "
                         "SLHA file." % inputFile )
@@ -335,21 +387,18 @@ class XSecComputer:
                 ss = s*TeV
                 self.compute( ss, inputFile, unlink= unlink, loFromSlha= lOfromSLHA,
                               pythiacard=pythiacard, ssmultipliers = ssmultipliers )
-                if tofile == "all":
-                    xcomment = str(self.nevents)+" evts, pythia%d [pb]"%\
-                                              self.pythiaVersion
-                    nXSecs += self.addXSecToFile(self.loXsecs, inputFile, xcomment, complain )
+                if tofile == "all" and hasattr ( self, "loXSecs" ):
+                    nXSecs += self.addXSecToFile(self.loXsecs, inputFile, complain )
                     complain = False
-                xcomment = str(self.nevents)+" events, [pb], pythia%d for LO"%\
-                                              self.pythiaVersion
                 if tofile != False:
                     ## FIXME check if higher orders are already in from
                     ## ref xsecs
-                    nXSecs += self.addXSecToFile( self.xsecs, inputFile, xcomment, complain)
+                    nXSecs += self.addXSecToFile( self.xsecs, inputFile, complain)
                     complain = False
             if nXSecs > 0: ## only add if we actually added xsecs
                 self.addMultipliersToFile ( ssmultipliers, inputFile )
             self.addCommentToFile ( comment, inputFile )
+            self.cleanSLHAFile ( inputFile )
         else:
             logger.info("Computing SLHA cross section from %s." % inputFile )
             print()
@@ -434,13 +483,12 @@ class XSecComputer:
                 break
             g.write ( line )
 
-    def addXSecToFile( self, xsecs, slhafile, comment=None, complain=True):
+    def addXSecToFile( self, xsecs, slhafile, complain=True):
         """
         Write cross sections to an SLHA file.
 
         :param xsecs: a XSectionList object containing the cross sections
         :param slhafile: target file for writing the cross sections in SLHA format
-        :param comment: optional comment to be added to each cross section block
         :param complain: complain if there are already cross sections in file
 
         """
@@ -470,6 +518,9 @@ class XSecComputer:
         outfile = open(slhafile, 'a')
         nxsecs = 0
         for xsec in xsecs:
+            xseccomment = ""
+            if str(xsec) in self.comments:
+                xseccomment = self.comments[str(xsec)]
             writeXsec = True
             for oldxsec in xSectionList:
                 if oldxsec.info == xsec.info and set(oldxsec.pid) == set(xsec.pid):
@@ -477,7 +528,7 @@ class XSecComputer:
                     break
             if writeXsec:
                 nxsecs += 1
-                outfile.write( self.xsecToBlock(xsec, (2212, 2212), comment) + "\n")
+                outfile.write( self.xsecToBlock(xsec, (2212, 2212), xseccomment) + "\n")
         outfile.close()
 
         return nxsecs

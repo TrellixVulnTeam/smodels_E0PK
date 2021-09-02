@@ -511,8 +511,7 @@ class CombinedDataSet(object):
                 datasetOrder = [datasetOrder]
 
             if len(datasetOrder) != len(datasets):
-                raise SModelSError("Number of datasets in the datasetOrder field does not match the number of datasets for %s"
-                                   %self.globalInfo.id)
+                raise SModelSError( f"Number of datasets in the datasetOrder field {len(datasetOrder)} does not match the number of datasets {len(datasets)} for {self.globalInfo.id}" )
             for dataset in datasets:
                 if not dataset.getID() in datasetOrder:
                     raise SModelSError("Dataset ID %s not found in datasetOrder" %dataset.getID())

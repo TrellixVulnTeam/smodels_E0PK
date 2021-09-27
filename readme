@@ -4,3 +4,4 @@
 -) storing of weight matrices (done)
 -) changes for expected combined results
 -) combination of 8 tev and 13 tev results
+-) improved truncated Gaussians

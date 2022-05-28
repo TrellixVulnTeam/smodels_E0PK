@@ -408,19 +408,8 @@ class LikelihoodComputer:
             #        mu_c[i]=0.
             ## find mu_hat by finding the root of 1/L dL/dmu. We know
             ## that the zero has to be between min(mu_c) and max(mu_c).
-            lstarters = [
-                avgr - 0.2 * abs(avgr),
-                minr,
-                0.0,
-                -1.0,
-                1.0,
-                10.0,
-                -0.1,
-                0.1,
-                -100.0,
-                100.0,
-                -1000.0,
-            ]
+            lstarters = [ avgr - 0.2 * abs(avgr), minr, 0.0, -1.0, 1.0, 10.0, -0.1, \
+                          0.1, -100.0, 100.0, -1000.0, ]
             closestl, closestr = None, float("inf")
             for lower in lstarters:
                 lower_v = self.dNLLdMu(lower, nsig, theta_hat)
@@ -433,21 +422,8 @@ class LikelihoodComputer:
                     f"did not find a lower value with rootfinder(lower) < 0. Closest: f({closestl})={closestr}"
                 )
                 return self.extendedOutput(extended_output, 0.0)
-            ustarters = [
-                avgr + 0.2 * abs(avgr),
-                maxr,
-                0.0,
-                1.0,
-                10.0,
-                -1.0 - 0.1,
-                0.1,
-                100.0,
-                -100.0,
-                1000.0,
-                -1000.0,
-                0.01,
-                -0.01,
-            ]
+            ustarters = [ avgr + 0.2 * abs(avgr), maxr, 0.0, 1.0, 10.0, -1.0 - 0.1,\
+                0.1, 100.0, -100.0, 1000.0, -1000.0, 0.01, -0.01, ]
             closestl, closestr = None, float("inf")
             for upper in ustarters:
                 upper_v = self.dNLLdMu(upper, nsig, theta_hat)

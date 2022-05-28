@@ -15,7 +15,7 @@ import unittest
 
 # from smodels.tools import statistics
 from smodels.tools.simplifiedLikelihoods import UpperLimitComputer, LikelihoodComputer, Data
-from smodels.tools.statistics import likelihoodFromLimits, chi2FromLimits
+from smodels.tools.statistics import likelihoodFromLimits, chi2FromLimits, TruncatedGaussians
 from smodels.theory.theoryPrediction import theoryPredictionsFor
 from smodels.share.models.mssm import BSMList
 from smodels.share.models.SMparticles import SMList
@@ -52,8 +52,11 @@ class StatisticsTest(unittest.TestCase):
             chi2marg = llhdcomp.chi2( marginalize=True)
             print("llhd direct", llhddir, chi2dir)
             print("llhd marg", llhdmarg, chi2marg)
-            llhdlim, muhat, sigma_mu = likelihoodFromLimits(ulobs, ulexp, nsig)
-            chi2lim = chi2FromLimits(llhdlim, ulobs, ulexp)
+            computer = TruncatedGaussians ( ulobs, ulexp, nsig )
+            # llhdlim, muhat, sigma_mu = likelihoodFromLimits(ulobs, ulexp, nsig)
+            llhdlim, muhat, sigma_mu = computer.likelihoodOfNSig ( nsig )
+            # chi2lim = chi2FromLimits(llhdlim, ulobs, ulexp)
+            chi2lim = computer.chi2 ( llhdlim )
             print("llhd from limits", llhdlim, chi2lim)
             totdir += llhddir * dx
             totlim += llhdlim * dx
@@ -73,9 +76,12 @@ class StatisticsTest(unittest.TestCase):
 
         for nsig in [0, 5]:
             for allowNegatives in [False, True]:
-                llhdlim, muhat, sigma_exp = likelihoodFromLimits(
-                    4.5, 5.45, nsig, False, allowNegatives
-                )
+                computer = TruncatedGaussians ( 4.5, 5.45, nsig )
+                #llhdlim, muhat, sigma_exp = likelihoodFromLimits(
+                #    4.5, 5.45, nsig, False, allowNegatives
+                #)
+                llhdlim, muhat, sigma_exp = computer.likelihoodOfNSig ( nsig,
+                       nll = False, allowNegativeMuhat = allowNegatives )
                 c = comparisons[allowNegatives][nsig]
                 self.assertAlmostEqual(llhdlim, c, 2)
 
@@ -88,9 +94,12 @@ class StatisticsTest(unittest.TestCase):
 
         for nsig in [0, 3, 5]:
             for x in [0.0, 0.6]:
-                llhdlim, muhat, sigma_exp = likelihoodFromLimits(
-                    8.52, 6.18, nsig, False, False, corr=x
-                )
+                computer = TruncatedGaussians ( 8.52, 6.18, nsig, corr = x )
+                #ollhdlim, omuhat, osigma_exp = likelihoodFromLimits(
+                #    8.52, 6.18, nsig, False, False, corr=x
+                #)
+                llhdlim, muhat, sigma_exp = computer.likelihoodOfNSig ( nsig,
+                        False, False )
                 c = comparisons[x][nsig]
                 self.assertAlmostEqual(llhdlim, c, 2)
 
@@ -109,8 +118,11 @@ class StatisticsTest(unittest.TestCase):
         chi2dir = llhdcomp.chi2()
         llhdmarg = llhdcomp.likelihoodOfNSig(nsig, marginalize=True)
         chi2marg = llhdcomp.chi2( marginalize=True)
-        llhdlim, muhat, sigma_exp = likelihoodFromLimits(ulobs, ulexp, nsig)
-        chi2lim = chi2FromLimits(llhdlim, ulobs, ulexp)
+        computer = TruncatedGaussians ( ulobs, ulexp, nsig )
+        # llhdlim, muhat, sigma_exp = likelihoodFromLimits(ulobs, ulexp, nsig)
+        llhdlim, muhat, sigma_exp = computer.likelihoodOfNSig ( nsig )
+        chi2lim = computer.chi2 ( llhdlim )
+        # chi2lim = chi2FromLimits(llhdlim, ulobs, ulexp)
         ## relative error on chi2, for this example is about 4%
         rel = abs(chi2lim - chi2marg) / chi2marg
         self.assertAlmostEqual(rel, 0.04, 1)

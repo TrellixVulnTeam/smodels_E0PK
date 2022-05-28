@@ -21,16 +21,26 @@ class TruncatedGaussians:
     """ likelihood computer based on the trunacated Gaussian approximation, see
          arXiv:1202.3415 """
 
-    def __init__  ( self, upperLimit, expectedUpperLimit, predicted_yield, cl=.95 ):
+    def __init__  ( self, upperLimit, expectedUpperLimit, predicted_yield, 
+                    corr : Optional[float] = 0.6, cl=.95 ):
         """
         :param upperLimit: observed upper limit, as a yield (i.e. unitless)
         :param expectedUpperLimit: expected upper limit, also as a yield
         :param predicted_xsec: the predicted signal yield, unitless
+        :param corr: correction factor:
+           ULexp_mod = ULexp / (1. - corr*((ULobs-ULexp)/(ULobs+ULexp)))
+           When comparing with likelihoods constructed from efficiency maps,
+           a factor of corr = 0.6 has been found to result in the best approximations.
         :param cl: confidence level
         """
+        if corr > 0.0 and upperLimit > expectedUpperLimit:
+            expectedUpperLimit = expectedUpperLimit / (
+                1.0 - corr * ((upperLimit - expectedUpperLimit) / (upperLimit + expectedUpperLimit))
+            )
         self.upperLimit = upperLimit
         self.expectedUpperLimit = expectedUpperLimit
         self.predicted_yield = predicted_yield
+        self.corr = corr
         self.sigma_exp = self.getSigma()  # the expected scale, eq 3.24 in arXiv:1202.3415
         self.denominator = np.sqrt(2.0) * self.sigma_exp
         self.cl = cl
@@ -45,17 +55,13 @@ class TruncatedGaussians:
                else demand that muhat >= 0. In the presence of underfluctuations
                in the data, setting this to True results in more realistic
                approximate likelihoods.
-        :param corr: correction factor:
-                     ULexp_mod = ULexp / (1. - corr*((ULobs-ULexp)/(ULobs+ULexp)))
-                     When comparing with likelihoods constructed from efficiency maps,
-                     a factor of corr = 0.6 has been found to result in the best approximations.
 
         :returns: likelihood (float), muhat, and sigma_mu
         """
         return self.likelihoodOfNSig ( mu * self.predicted_yield, nll=nll,
                 allowNegativeMuhat = allowNegativeMuhat, corr = corr )
 
-    def likelihoodOfNsig ( self, nsig : float, nll : Optional[bool]=False, 
+    def likelihoodOfNSig ( self, nsig : float, nll : Optional[bool]=False, 
             allowNegativeMuhat : Optional[bool] = True,
             corr : Optional[float] = 0.6 ) -> float:
         """ return the likelihood, as a function of nsig
@@ -82,14 +88,14 @@ class TruncatedGaussians:
             else:
                 return self.llhd(nsig, 0.0, nll), 0.0, self.sigma_exp
 
-        fA = root_func(0.0)
-        fB = root_func(max(self.upperLimit, self.expectedUpperLimit))
+        fA = self.root_func(0.0)
+        fB = self.root_func(max(self.upperLimit, self.expectedUpperLimit))
         if np.sign(fA * fB) > 0.0:
             ## the have the same sign
             logger.error("when computing likelihood: fA and fB have same sign")
             return None, None, None
         mumax = optimize.brentq(
-            root_func, 0.0, max(self.upperLimit, self.expectedUpperLimit), 
+            self.root_func, 0.0, max(self.upperLimit, self.expectedUpperLimit), 
             rtol=1e-03, xtol=1e-06)
         llhdexp = self.llhd(nsig, mumax, nll)
         return llhdexp, mumax, self.sigma_exp
@@ -128,6 +134,15 @@ class TruncatedGaussians:
         if nll:
             return np.log(A) - stats.norm.logpdf(nsig, mumax, self.sigma_exp)
         return float(stats.norm.pdf(nsig, mumax, self.sigma_exp) / A)
+
+    def chi2( self, likelihood ):
+        """compute the chi2 value from a likelihood (convenience function)."""
+        l0 = 2.0 * stats.norm.logpdf(0.0, 0.0, self.sigma_exp)
+        l = deltaChi2FromLlhd(likelihood)
+        if l is None:
+            return None
+
+        return l + l0
 
 
 def likelihoodFromLimits(
@@ -216,7 +231,6 @@ def likelihoodFromLimits(
     )
     llhdexp = llhd(nsig, mumax, sigma_exp, nll)
     return llhdexp, mumax, sigma_exp
-
 
 def CLsfromNLL(
     nllA: float, nll0A: float, nll: float, nll0: float, return_type: Text = "CLs-alpha"

@@ -319,7 +319,7 @@ class TheoryPrediction(object):
             ulN, eulN, nsig, allowNegativeMuhat=True, corr=corr
         )
         computer = TruncatedGaussians ( ulN, eulN, float ( (self.xsection.value * lumi).asNumber()) )
-        llhd, muhat, sigma_mu = computer.likelihoodOfNsig ( nsig )
+        llhd, muhat, sigma_mu = computer.likelihoodOfNSig ( nsig )
         if False: # muhat < 0.0 and allowNegativeSignals == False:
             oldmuhat = muhat
             oldl = llhd

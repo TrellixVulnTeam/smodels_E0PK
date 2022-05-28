@@ -235,7 +235,7 @@ def combinedSimplifiedLikelihood(
     bg = [x.dataInfo.expectedBG for x in dataset._datasets]
     cov = dataset.globalInfo.covariance
     computer = LikelihoodComputer(Data(nobs, bg, cov, None, nsig, deltas_rel=deltas_rel))
-    return computer.likelihood(nsig, marginalize=marginalize)
+    return computer.likelihoodOfNSig(nsig, marginalize=marginalize)
 
 
 def combinedSimplifiedLmax(

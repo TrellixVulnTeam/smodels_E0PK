@@ -105,9 +105,9 @@ class StatisticsTest(unittest.TestCase):
         dx = .5
         m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0.)
         llhdcomp = LikelihoodComputer(m)
-        llhddir = llhdcomp.likelihood(nsig)
+        llhddir = llhdcomp.likelihoodOfNSig(nsig)
         chi2dir = llhdcomp.chi2()
-        llhdmarg = llhdcomp.likelihood(nsig, marginalize=True)
+        llhdmarg = llhdcomp.likelihoodOfNSig(nsig, marginalize=True)
         chi2marg = llhdcomp.chi2( marginalize=True)
         llhdlim, muhat, sigma_exp = likelihoodFromLimits(ulobs, ulexp, nsig)
         chi2lim = chi2FromLimits(llhdlim, ulobs, ulexp)
@@ -161,7 +161,7 @@ class StatisticsTest(unittest.TestCase):
         nsig = (pred_signal_strength * expRes.globalInfo.lumi).asNumber()
         m = Data(4, 2.2, 1.1**2, None, nsignal=nsig, deltas_rel=0.2)
         computer = LikelihoodComputer(m)
-        dll = math.log(computer.likelihood(nsig, marginalize=False))
+        dll = math.log(computer.likelihoodOfNSig(nsig, marginalize=False))
         self.assertAlmostEqual(ill, dll, places=2)
         dchi2 = computer.chi2( marginalize=False)
         # print ( "dchi2,ichi2",dchi2,ichi2)
@@ -172,8 +172,8 @@ class StatisticsTest(unittest.TestCase):
         nsig = 2
         m = Data(1e20, 2.2, 1.1**2, None, nsignal=nsig, deltas_rel=0.2)
         computer = LikelihoodComputer(m)
-        llhd = computer.likelihood(2, marginalize=False)
-        nll = computer.likelihood(2, marginalize=False, nll=True)
+        llhd = computer.likelihoodOfNSig(2, marginalize=False)
+        nll = computer.likelihoodOfNSig(2, marginalize=False, nll=True)
         self.assertAlmostEqual(0.0, llhd, places=2)
         dchi2 = computer.chi2( marginalize=False)
         ichi2 = 4.486108149972863e21
@@ -729,7 +729,7 @@ class StatisticsTest(unittest.TestCase):
             # computer = LikelihoodComputer( nobs, nb, deltab**2 )
             # likelihood_actual = statistics.likelihood( nsig,
             #    nobs, nb, deltab, deltas)
-            likelihood_actual = computer.likelihood(nsig, marginalize=False)
+            likelihood_actual = computer.likelihoodOfNSig(nsig, marginalize=False)
             # likelihood_actual = statistics.likelihood()
             #             logger.error("llk= "+str(likelihood_actual)+" nsig="+str(nsig)+" nobs = "+str(nobs)+" nb="+str(nb)+"+-"+str(deltab))
             # print('llhdactual', likelihood_actual)

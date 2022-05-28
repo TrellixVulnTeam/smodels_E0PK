@@ -316,7 +316,7 @@ class DataSet(object):
             # if abs ( nsig[0]-1 ) < 1e-5:
             #    print ( f"COMB ebg={self.dataInfo.expectedBG:.3f} obs={obs:.3f} nsig {nsig[0]:.3f}" )
             computer = LikelihoodComputer(m)
-        ret = computer.likelihood(nsig, marginalize=marginalize)
+        ret = computer.likelihoodOfNSig(nsig, marginalize=marginalize)
         if hasattr(computer, "theta_hat"):
             ## seems like someone wants to debug them
             self.theta_hat = computer.theta_hat

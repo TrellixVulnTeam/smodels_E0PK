@@ -891,7 +891,7 @@ class LikelihoodComputer:
         else:
             return self.profileLikelihood(nsig, nll)
 
-    def likelihood_beta(self, mu: float, marginalize: bool = False, nll: bool = False) -> float:
+    def likelihood(self, mu: float, marginalize: bool = False, nll: bool = False) -> float:
         """compute likelihood for mu, profiling or marginalizing the nuisances
         :param mu: float Parameter of interest, signal strength
         :param marginalize: if true, marginalize, if false, profile
@@ -921,14 +921,14 @@ class LikelihoodComputer:
             if abs(self.model.nsignal) > 1e-100:
                 self.muhat = float(dn[0] / self.model.nsignal[0])
             self.sigma_mu = np.sqrt(self.model.observed[0] + self.model.covariance[0][0])
-            return self.likelihood_beta(marginalize=marginalize, nll=nll, mu = self.muhat )
+            return self.likelihood(marginalize=marginalize, nll=nll, mu = self.muhat )
         fmh = self.findMuHat( allowNegativeSignals=allowNegativeSignals,
                               extended_output=True, nll=nll
         )
         muhat_, sigma_mu, lmax = fmh["muhat"], fmh["sigma_mu"], fmh["lmax"]
         self.muhat = muhat_
         self.sigma_mu = sigma_mu
-        return self.likelihood_beta ( marginalize=marginalize, nll=nll, mu=muhat_ )
+        return self.likelihood ( marginalize=marginalize, nll=nll, mu=muhat_ )
 
     def findMuHatViaGradient(
         self,
@@ -940,7 +940,7 @@ class LikelihoodComputer:
         """currently not used but finding muhat via gradient descent"""
 
         def myllhd(mu):
-            return self.likelihood_beta(nll=True, marginalize=marginalize, mu = mu )
+            return self.likelihood(nll=True, marginalize=marginalize, mu = mu )
 
         import scipy.optimize
 
@@ -975,12 +975,12 @@ class LikelihoodComputer:
         """
 
         # Compute the likelhood for the null hypothesis (signal hypothesis) H0:
-        llhd = self.likelihood_beta(1., marginalize=marginalize, nll=True)
+        llhd = self.likelihood(1., marginalize=marginalize, nll=True)
 
         # Compute the maximum likelihood H1, which sits at nsig = nobs - nb
         # (keeping the same % error on signal):
         if len(self.model.observed) == 1:
-            # TODO this nsig initiation seems wrong and changing maxllhd to likelihood_beta
+            # TODO this nsig initiation seems wrong and changing maxllhd to likelihood
             # fails ./testStatistics.py : zero division error in L115
             dn = self.model.observed - self.model.backgrounds
             maxllhd = self.likelihoodOfNSig(dn, marginalize=marginalize, nll=True, mu = 1. )
@@ -1099,7 +1099,7 @@ class UpperLimitComputer:
         else:
             sigma_mu = computer.getSigmaMu(mu_hat, theta_hat0)
 
-            nll0 = computer.likelihood_beta(
+            nll0 = computer.likelihood(
                 mu_hat,
                 marginalize=marginalize,
             )

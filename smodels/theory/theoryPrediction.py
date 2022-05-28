@@ -316,7 +316,8 @@ class TheoryPrediction(object):
         if mu is not None:
             nsig = mu * (self.xsection.value * lumi).asNumber()
         computer = TruncatedGaussians ( ulN, eulN, float ( (self.xsection.value * lumi).asNumber()) )
-        llhd, muhat, sigma_mu = computer.likelihoodOfNSig ( nsig )
+        ret = computer.likelihoodOfNSig ( nsig )
+        llhd, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
         """
         if False: # muhat < 0.0 and allowNegativeSignals == False:
             oldmuhat = muhat
@@ -332,7 +333,7 @@ class TheoryPrediction(object):
             self.muhat_ = muhat
         self.sigma_mu_ = sigma_mu / (self.xsection.value * lumi).asNumber()
         if chi2also:
-            return (llhd, computer.chi2 ( nsig ) )
+            return (llhd, computer.chi2 ( ) )
         return llhd
 
     def computeStatistics(self, expected=False, allowNegativeSignals=False):

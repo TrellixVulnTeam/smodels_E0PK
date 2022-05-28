@@ -78,19 +78,34 @@ class TruncatedGaussians:
 
         :returns: likelihood (float), muhat, and sigma_mu
         """
+        sllhd = "llhd"
+        if nll:
+            sllhd = "nll"
+    
         if self.upperLimit < self.expectedUpperLimit:
             ## underfluctuation. muhat = 0.
             if allowNegativeMuhat:
                 xa = -self.expectedUpperLimit
                 xb = 1
                 muhat = self.find_neg_muhat( xa, xb )
-                return self.llhd(nsig, muhat, nll), muhat, self.sigma_exp
+                self.llhd_ = self.llhd(nsig, muhat, nll = False )
+                ret = self.llhd_
+                if nll:
+                    ret = -math.log(ret)
+                return { sllhd: ret, "muhat": muhat, "sigma_mu": self.sigma_exp }
             else:
-                return self.llhd(nsig, 0.0, nll), 0.0, self.sigma_exp
+                self.llhd_ = self.llhd(nsig, 0.0, nll = False )
+                ret = self.llhd_
+                if nll:
+                    ret = -math.log(ret)
+                return { sllhd: ret, "muhat": 0.0, "sigma_mu": self.sigma_exp }
 
         muhat = self.findMuhat()
-        llhdexp = self.llhd(nsig, muhat, nll)
-        return llhdexp, muhat, self.sigma_exp
+        self.llhd_ = self.llhd(nsig, muhat, nll = False )
+        ret = self.llhd_
+        if nll:
+            ret = -math.log(ret)
+        return { sllhd: ret, "muhat": muhat, "sigma_mu": self.sigma_exp }
 
     def findMuhat ( self ):
         fA = self.root_func(0.0)
@@ -139,8 +154,14 @@ class TruncatedGaussians:
             return np.log(A) - stats.norm.logpdf(nsig, muhat, self.sigma_exp)
         return float(stats.norm.pdf(nsig, muhat, self.sigma_exp) / A)
 
-    def chi2( self, likelihood ):
-        """compute the chi2 value from a likelihood (convenience function)."""
+    def chi2( self, likelihood = None ):
+        """compute the chi2 value from a likelihood (convenience function).
+        :param likelihood: supply likelihood, if None, use just calculcated llhd
+        """
+        if likelihood == None:
+            if not hasattr ( self, "llhd_" ):
+                raise SModelSError ( "asking for chi2 but no likelihood given" )
+            likelihood = self.llhd_
         l0 = 2.0 * stats.norm.logpdf(0.0, 0.0, self.sigma_exp)
         l = deltaChi2FromLlhd(likelihood)
         if l is None:

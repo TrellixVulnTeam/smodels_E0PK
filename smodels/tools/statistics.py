@@ -15,7 +15,119 @@ from smodels.tools.smodelsLogging import logger
 from scipy.special import erf
 import numpy as np
 from smodels.experiment.exceptions import SModelSExperimentError as SModelSError
-from typing import Text
+from typing import Text, Optional
+
+class TruncatedGaussians:
+    """ likelihood computer based on the trunacated Gaussian approximation, see
+         arXiv:1202.3415 """
+
+    def __init__  ( self, upperLimit, expectedUpperLimit, predicted_yield, cl=.95 ):
+        """
+        :param upperLimit: observed upper limit, as a yield (i.e. unitless)
+        :param expectedUpperLimit: expected upper limit, also as a yield
+        :param predicted_xsec: the predicted signal yield, unitless
+        :param cl: confidence level
+        """
+        self.upperLimit = upperLimit
+        self.expectedUpperLimit = expectedUpperLimit
+        self.predicted_yield = predicted_yield
+        self.sigma_exp = getSigma(expectedUpperLimit)  # the expected scale, eq 3.24 in arXiv:1202.3415
+        self.denominator = np.sqrt(2.0) * sigma_exp
+        self.cl = cl
+
+    def likelihood ( self, mu : float, nll : Optional[bool]=False, 
+            allowNegativeMuhat : Optional[bool] = True,
+            corr : Optional[float] = 0.6 ) -> float:
+        """ return the likelihood, as a function of mu
+        :param nsig: number of signal events, if None then nsig = mumax
+        :param nll: if True, return negative log likelihood
+        :param allowNegativeMuhat: if True, then allow muhat to become negative,
+               else demand that muhat >= 0. In the presence of underfluctuations
+               in the data, setting this to True results in more realistic
+               approximate likelihoods.
+        :param corr: correction factor:
+                     ULexp_mod = ULexp / (1. - corr*((ULobs-ULexp)/(ULobs+ULexp)))
+                     When comparing with likelihoods constructed from efficiency maps,
+                     a factor of corr = 0.6 has been found to result in the best approximations.
+
+        :returns: likelihood (float), muhat, and sigma_mu
+        """
+        return self.likelihoodOfNSig ( mu * self.predicted_yield, nll=nll,
+                allowNegativeMuhat = allowNegativeMuhat, corr = corr )
+
+    def likelihoodOfNsig ( self, nsig : float, nll : Optional[bool]=False, 
+            allowNegativeMuhat : Optional[bool] = True,
+            corr : Optional[float] = 0.6 ) -> float:
+        """ return the likelihood, as a function of nsig
+        :param nsig: number of signal events, if None then nsig = mumax
+        :param nll: if True, return negative log likelihood
+        :param allowNegativeMuhat: if True, then allow muhat to become negative,
+               else demand that muhat >= 0. In the presence of underfluctuations
+               in the data, setting this to True results in more realistic
+               approximate likelihoods.
+        :param corr: correction factor:
+                     ULexp_mod = ULexp / (1. - corr*((ULobs-ULexp)/(ULobs+ULexp)))
+                     When comparing with likelihoods constructed from efficiency maps,
+                     a factor of corr = 0.6 has been found to result in the best approximations.
+
+        :returns: likelihood (float), muhat, and sigma_mu
+        """
+        if self.upperLimit < self.expectedUpperLimit:
+            ## underfluctuation. mumax = 0.
+            if allowNegativeMuhat:
+                xa = -expectedUpperLimit
+                xb = 1
+                mumax = find_neg_mumax(upperLimit, expectedUpperLimit, xa, xb)
+                return self.llhd(nsig, mumax, sigma_exp, nll), mumax, sigma_exp
+            else:
+                return self.llhd(nsig, 0.0, sigma_exp, nll), 0.0, sigma_exp
+
+        fA = root_func(0.0)
+        fB = root_func(max(self.upperLimit, self.expectedUpperLimit))
+        if np.sign(fA * fB) > 0.0:
+            ## the have the same sign
+            logger.error("when computing likelihood: fA and fB have same sign")
+            return None, None, None
+        mumax = optimize.brentq(
+            root_func, 0.0, max(self.upperLimit, self.expectedUpperLimit), 
+            rtol=1e-03, xtol=1e-06)
+        llhdexp = self.llhd(nsig, mumax, sigma_exp, nll)
+        return llhdexp, mumax, sigma_exp
+
+    def getSigma(self, muhat=0.0 ):
+        """get the standard deviation sigma, given
+        an upper limit and a central value. assumes a truncated Gaussian likelihood"""
+        # the expected scale, eq 3.24 in arXiv:1202.3415
+        return ( self.expectedUpperLimit - muhat) / 1.96
+
+    def root_func(self,x):  # we want the root of this one
+        return (erf((self.upperLimit - x) / self.denominator) + erf(x / self.denominator)) / (
+            1.0 + erf(x / self.denominator)) - self.cl
+
+    def find_neg_mumax(self, xa, xb):
+        c = 0
+        while root_func(xa) * root_func(xb) > 0:
+            xa = 2 * xa
+            c += 1
+            if c > 10:
+                logger.error(
+                    f"cannot find bracket for brent bracketing ul={upperLimit}, eul={expectedUpperLimit},xa={xa}, xb={xb}"
+                )
+
+        mumax = optimize.brentq(self.root_func, xa, xb, rtol=1e-03, xtol=1e-06)
+        return mumax
+
+    def llhd( self, nsig, mumax, sigma_exp, nll):
+        if nsig is None:
+            nsig = mumax
+        # need to account for the truncation!
+        # first compute how many sigmas left of center is 0.
+        Zprime = mumax / sigma_exp
+        # now compute the area of the truncated gaussian
+        A = stats.norm.cdf(Zprime)
+        if nll:
+            return np.log(A) - stats.norm.logpdf(nsig, mumax, sigma_exp)
+        return float(stats.norm.pdf(nsig, mumax, sigma_exp) / A)
 
 
 def likelihoodFromLimits(

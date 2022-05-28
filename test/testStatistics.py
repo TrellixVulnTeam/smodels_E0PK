@@ -113,7 +113,11 @@ class StatisticsTest(unittest.TestCase):
         llhdmarg = llhdcomp.likelihood(mu=1., marginalize=True)
         chi2marg = llhdcomp.chi2( marginalize=True)
         computer = TruncatedGaussians ( ulobs, ulexp, nsig )
-        llhdlim, muhat, sigma_exp = computer.likelihood ( mu=1. )
+        ret = computer.likelihood ( mu=1. )
+        llhdlim, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
+        self.assertAlmostEqual(llhdlim,0.003427964159300251)
+        self.assertAlmostEqual(muhat,0.23328649242374602)
+        self.assertAlmostEqual(sigma_mu,0.338419104966444)
         chi2lim = computer.chi2 ( ) # llhdlim )
         ## relative error on chi2, for this example is about 4%
         rel = abs(chi2lim - chi2marg) / chi2marg

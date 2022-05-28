@@ -12,6 +12,7 @@
 
 from scipy import stats, optimize
 from smodels.tools.smodelsLogging import logger
+from smodels.tools.physicsUnits import fb
 from scipy.special import erf
 import numpy as np
 from smodels.experiment.exceptions import SModelSExperimentError as SModelSError
@@ -22,17 +23,24 @@ class TruncatedGaussians:
          arXiv:1202.3415 """
 
     def __init__  ( self, upperLimit, expectedUpperLimit, predicted_yield, 
-                    corr : Optional[float] = 0.6, cl=.95 ):
+                    corr : Optional[float] = 0.6, cl=.95, lumi = None ):
         """
-        :param upperLimit: observed upper limit, as a yield (i.e. unitless)
-        :param expectedUpperLimit: expected upper limit, also as a yield
-        :param predicted_xsec: the predicted signal yield, unitless
+        :param upperLimit: observed upper limit, as a yield or on xsec
+        :param expectedUpperLimit: expected upper limit, also as a yield or on xsec
+        :param predicted_yield: the predicted signal yield, unitless or [fb]
         :param corr: correction factor:
            ULexp_mod = ULexp / (1. - corr*((ULobs-ULexp)/(ULobs+ULexp)))
            When comparing with likelihoods constructed from efficiency maps,
            a factor of corr = 0.6 has been found to result in the best approximations.
         :param cl: confidence level
+        :param lumi: if not None, and if the limits are in [fb], then use
+                     it to translate limits on xsecs into limits on yields 
+                     internally
         """
+        if type(lumi) != type(None) and type(upperLimit) == type(fb):
+            upperLimit = float ( upperLimit * lumi )
+            expectedUpperLimit = float ( expectedUpperLimit * lumi )
+            predicted_yield = float ( predicted_yield * lumi )
         if corr > 0.0 and upperLimit > expectedUpperLimit:
             expectedUpperLimit = expectedUpperLimit / (
                 1.0 - corr * ((upperLimit - expectedUpperLimit) / (upperLimit + expectedUpperLimit))

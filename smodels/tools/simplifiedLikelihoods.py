@@ -982,8 +982,8 @@ class LikelihoodComputer:
         if len(self.model.observed) == 1:
             # TODO this nsig initiation seems wrong and changing maxllhd to likelihood
             # fails ./testStatistics.py : zero division error in L115
-            dn = self.model.observed - self.model.backgrounds
-            maxllhd = self.likelihoodOfNSig(dn, marginalize=marginalize, nll=True, mu = 1. )
+            mu_hat = ( self.model.observed - self.model.backgrounds ) / self.model.nsignal
+            maxllhd = self.likelihood (mu_hat, marginalize=marginalize, nll=True )
         else:
             maxllhd = self.lmax( marginalize=marginalize, nll=True, allowNegativeSignals=False)
         chi2 = 2 * (llhd - maxllhd)

@@ -986,7 +986,7 @@ class LikelihoodComputer:
 
         # Compute the maximum likelihood H1, which sits at nsig = nobs - nb
         # (keeping the same % error on signal):
-        if len(nsig) == 1:
+        if len(self.model.observed) == 1:
             # TODO this nsig initiation seems wrong and changing maxllhd to likelihood_beta
             # fails ./testStatistics.py : zero division error in L115
             nsig = self.model.observed - self.model.backgrounds

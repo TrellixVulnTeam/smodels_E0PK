@@ -310,11 +310,7 @@ class TheoryPrediction(object):
             element=self.avgElement, txnames=self.txnames, expected=False
         )
         lumi = self.dataset.getLumi()
-        ulN = float(ul * lumi)  # upper limit on yield
-        eulN = float(eul * lumi)  # upper limit on yield
-        nsig = None
-        pred_yields = float ( (self.xsection.value * lumi).asNumber())
-        computer = TruncatedGaussians ( ulN, eulN, pred_yields )
+        computer = TruncatedGaussians ( ul, eul, self.xsection.value, lumi=lumi, corr = corr )
         ret = computer.likelihood ( mu )
         llhd, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
         """
@@ -327,10 +323,8 @@ class TheoryPrediction(object):
             )
             nllhd, nmuhat, nsigma_mu = computer.likelihood ( 0. )
         """
-        if mu is None:
-            muhat = muhat #/ pred_yields
-            self.muhat_ = muhat
-        self.sigma_mu_ = sigma_mu #/ pred_yields
+        self.muhat_ = muhat
+        self.sigma_mu_ = sigma_mu 
         if chi2also:
             return (llhd, computer.chi2 ( ) )
         return llhd

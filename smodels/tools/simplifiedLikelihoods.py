@@ -444,7 +444,7 @@ class LikelihoodComputer:
 
         if extended_output:
             sigma_mu = self.getSigmaMu(mu_hat, theta_hat)
-            llhd = self.likelihoodOfNSig(self.model.rel_signals(mu_hat), marginalize=marginalize, nll=nll)
+            llhd = self.likelihood( mu_hat, marginalize=marginalize, nll=nll)
             ret = {"muhat": mu_hat, "sigma_mu": sigma_mu, "lmax": llhd}
             return ret
         return mu_hat
@@ -1052,7 +1052,7 @@ class UpperLimitComputer:
             if expected == "posteriori":
                 # print ( "here!" )
                 tempc = LikelihoodComputer(oldmodel, toys)
-                theta_hat_, _ = tempc.findThetaHat(0 * getattr(oldmodel, signal_type))
+                theta_hat_, _ = tempc.findThetaHat(0 * oldmodel.nsignal )
             # model.observed = model.backgrounds
             for i, d in enumerate(model.backgrounds):
                 # model.observed[i]=int(np.ceil(d))
@@ -1064,7 +1064,7 @@ class UpperLimitComputer:
         mu_hat = computer.findMuHat( allowNegativeSignals=False, extended_output=False)
         if signal_type == "signal_rel":
             mu_hat = mu_hat * sum(model.nsignal)
-        theta_hat0, _ = computer.findThetaHat(0 * getattr(model, signal_type))
+        theta_hat0, _ = computer.findThetaHat(0 * model.nsignal )
         if signal_type == "signal_rel":
             sigma_mu = computer.getSigmaMu(mu_hat/sum(model.nsignal), theta_hat0)
             sigma_mu = sigma_mu * sum(model.nsignal)

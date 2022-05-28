@@ -13,7 +13,7 @@ from smodels.tools.physicsUnits import TeV, fb
 from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 from smodels.experiment.datasetObj import CombinedDataSet
 from smodels.tools.smodelsLogging import logger
-from smodels.tools.statistics import TruncatedGaussians # likelihoodFromLimits, chi2FromLimits, TruncatedGaussians
+from smodels.tools.statistics import TruncatedGaussians
 from smodels.tools.combinations import computeCombinedStatistics
 from smodels.tools.combinations import getCombinedUpperLimitFor, computeCombinedLikelihood
 import itertools
@@ -315,11 +315,9 @@ class TheoryPrediction(object):
         nsig = None
         if mu is not None:
             nsig = mu * (self.xsection.value * lumi).asNumber()
-        #llhd, muhat, sigma_mu = likelihoodFromLimits(
-        #    ulN, eulN, nsig, allowNegativeMuhat=True, corr=corr
-        #)
         computer = TruncatedGaussians ( ulN, eulN, float ( (self.xsection.value * lumi).asNumber()) )
         llhd, muhat, sigma_mu = computer.likelihoodOfNSig ( nsig )
+        """
         if False: # muhat < 0.0 and allowNegativeSignals == False:
             oldmuhat = muhat
             oldl = llhd
@@ -328,13 +326,12 @@ class TheoryPrediction(object):
                 ulN, eulN, nsig, 0.0, allowNegativeMuhat=True, corr=corr
             )
             nllhd, nmuhat, nsigma_mu = computer.likelihoodOfNsig ( 0. )
-            print ( f"compare {llhd} {nllhd} oldmuhat {oldmuhat} oldl {oldl}" )
+        """
         if mu is None:
             muhat = muhat / (self.xsection.value * lumi).asNumber()
             self.muhat_ = muhat
         self.sigma_mu_ = sigma_mu / (self.xsection.value * lumi).asNumber()
         if chi2also:
-            # return (llhd, chi2FromLimits(llhd, ulN, eulN, corr=corr))
             return (llhd, computer.chi2 ( nsig ) )
         return llhd
 

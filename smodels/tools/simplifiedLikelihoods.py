@@ -291,7 +291,7 @@ class LikelihoodComputer:
         self.model = data
         self.toys = toys
 
-    def dNLLdMu(self, mu, signal_rel, theta_hat):
+    def dNLLdMu(self, mu, theta_hat):
         """
         d (- ln L)/d mu, if L is the likelihood. The function
         whose root gives us muhat, i.e. the mu that maximizes
@@ -302,6 +302,7 @@ class LikelihoodComputer:
         :param theta_hat: array with nuisance parameters
 
         """
+        nsig = self.model.nsignal
         if not self.model.isLinear():
             logger.debug("implemented only for linear model")
         # n_pred^i := mu s_i + b_i + theta_i
@@ -309,11 +310,11 @@ class LikelihoodComputer:
         # d NLL / d mu = sum_i [ - ( n_obs^i * s_ i ) / n_pred_i + s_i ]
 
         # Define relative signal strengths:
-        n_pred = mu * signal_rel + self.model.backgrounds + theta_hat
+        n_pred = mu * nsig + self.model.backgrounds + theta_hat
 
         for ctr, d in enumerate(n_pred):
             if d == 0.0:
-                if (self.model.observed[ctr] * signal_rel[ctr]) == 0.0:
+                if (self.model.observed[ctr] * nsig[ctr]) == 0.0:
                     #    logger.debug("zero denominator, but numerator also zero, so we set denom to 1.")
                     n_pred[ctr] = 1e-5
                 else:
@@ -322,7 +323,7 @@ class LikelihoodComputer:
                         "we have a zero value in the denominator at pos %d, with a non-zero numerator. dont know how to handle."
                         % ctr
                     )
-        ret = -self.model.observed * signal_rel / n_pred + signal_rel
+        ret = -self.model.observed * nsig / n_pred + nsig
 
         if type(ret) in [array, ndarray, list]:
             ret = sum(ret)
@@ -412,7 +413,7 @@ class LikelihoodComputer:
                           0.1, -100.0, 100.0, -1000.0, ]
             closestl, closestr = None, float("inf")
             for lower in lstarters:
-                lower_v = self.dNLLdMu(lower, nsig, theta_hat)
+                lower_v = self.dNLLdMu(lower, theta_hat)
                 if lower_v < 0.0:
                     break
                 if lower_v < closestr:
@@ -426,7 +427,7 @@ class LikelihoodComputer:
                 0.1, 100.0, -100.0, 1000.0, -1000.0, 0.01, -0.01, ]
             closestl, closestr = None, float("inf")
             for upper in ustarters:
-                upper_v = self.dNLLdMu(upper, nsig, theta_hat)
+                upper_v = self.dNLLdMu(upper, theta_hat)
                 if upper_v > 0.0:
                     break
                 if upper_v < closestr:
@@ -434,7 +435,7 @@ class LikelihoodComputer:
             if upper_v < 0.0:
                 logger.debug("did not find an upper value with rootfinder(upper) > 0.")
                 return self.extendedOutput(extended_output, 0.0)
-            mu_hat = optimize.brentq(self.dNLLdMu, lower, upper, args=(nsig, theta_hat), rtol=1e-9)
+            mu_hat = optimize.brentq(self.dNLLdMu, lower, upper, args=(theta_hat, ), rtol=1e-9)
             if not allowNegativeSignals and mu_hat < 0.0:
                 mu_hat = 0.0
                 theta_hat, _ = self.findThetaHat(mu_hat * nsig)

@@ -15,7 +15,7 @@ from smodels.tools.smodelsLogging import logger
 from scipy.special import erf
 import numpy as np
 from smodels.experiment.exceptions import SModelSExperimentError as SModelSError
-from typing import Text, Optional
+from typing import Text, Optional, Union
 
 class TruncatedGaussians:
     """ likelihood computer based on the trunacated Gaussian approximation, see
@@ -45,11 +45,11 @@ class TruncatedGaussians:
         self.denominator = np.sqrt(2.0) * self.sigma_exp
         self.cl = cl
 
-    def likelihood ( self, mu : float, nll : Optional[bool]=False, 
+    def likelihood ( self, mu : Union[float,None], nll : Optional[bool]=False, 
             allowNegativeMuhat : Optional[bool] = True,
             corr : Optional[float] = 0.6 ) -> float:
         """ return the likelihood, as a function of mu
-        :param nsig: number of signal events, if None then nsig = muhat
+        :param mu: number of signal events, if None then mu = muhat
         :param nll: if True, return negative log likelihood
         :param allowNegativeMuhat: if True, then allow muhat to become negative,
                else demand that muhat >= 0. In the presence of underfluctuations
@@ -58,14 +58,17 @@ class TruncatedGaussians:
 
         :returns: likelihood (float), muhat, and sigma_mu
         """
-        return self.likelihoodOfNSig ( mu * self.predicted_yield, nll=nll,
+        nsig = mu
+        if mu != None:
+            nsig = mu * self.predicted_yield
+        return self.likelihoodOfNSig ( nsig, nll=nll,
                 allowNegativeMuhat = allowNegativeMuhat, corr = corr )
 
-    def likelihoodOfNSig ( self, nsig : float, nll : Optional[bool]=False, 
+    def likelihoodOfNSig ( self, nsig : Union[float,None], nll : Optional[bool]=False, 
             allowNegativeMuhat : Optional[bool] = True,
             corr : Optional[float] = 0.6 ) -> float:
         """ return the likelihood, as a function of nsig
-        :param nsig: number of signal events, if None then nsig = muhat
+        :param nsig: number of signal events, if None then nsig = muhat * predicted_yioelds
         :param nll: if True, return negative log likelihood
         :param allowNegativeMuhat: if True, then allow muhat to become negative,
                else demand that muhat >= 0. In the presence of underfluctuations

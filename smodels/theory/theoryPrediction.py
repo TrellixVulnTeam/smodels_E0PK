@@ -313,10 +313,9 @@ class TheoryPrediction(object):
         ulN = float(ul * lumi)  # upper limit on yield
         eulN = float(eul * lumi)  # upper limit on yield
         nsig = None
-        if mu is not None:
-            nsig = mu * (self.xsection.value * lumi).asNumber()
-        computer = TruncatedGaussians ( ulN, eulN, float ( (self.xsection.value * lumi).asNumber()) )
-        ret = computer.likelihoodOfNSig ( nsig )
+        pred_yields = float ( (self.xsection.value * lumi).asNumber())
+        computer = TruncatedGaussians ( ulN, eulN, pred_yields )
+        ret = computer.likelihood ( mu )
         llhd, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
         """
         if False: # muhat < 0.0 and allowNegativeSignals == False:
@@ -326,12 +325,12 @@ class TheoryPrediction(object):
             llhd, muhat, sigma_mu = likelihoodFromLimits(
                 ulN, eulN, nsig, 0.0, allowNegativeMuhat=True, corr=corr
             )
-            nllhd, nmuhat, nsigma_mu = computer.likelihoodOfNsig ( 0. )
+            nllhd, nmuhat, nsigma_mu = computer.likelihood ( 0. )
         """
         if mu is None:
-            muhat = muhat / (self.xsection.value * lumi).asNumber()
+            muhat = muhat / pred_yields
             self.muhat_ = muhat
-        self.sigma_mu_ = sigma_mu / (self.xsection.value * lumi).asNumber()
+        self.sigma_mu_ = sigma_mu / pred_yields
         if chi2also:
             return (llhd, computer.chi2 ( ) )
         return llhd

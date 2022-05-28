@@ -328,9 +328,9 @@ class TheoryPrediction(object):
             nllhd, nmuhat, nsigma_mu = computer.likelihood ( 0. )
         """
         if mu is None:
-            muhat = muhat / pred_yields
+            muhat = muhat #/ pred_yields
             self.muhat_ = muhat
-        self.sigma_mu_ = sigma_mu / pred_yields
+        self.sigma_mu_ = sigma_mu #/ pred_yields
         if chi2also:
             return (llhd, computer.chi2 ( ) )
         return llhd

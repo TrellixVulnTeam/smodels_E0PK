@@ -41,8 +41,8 @@ class TruncatedGaussians:
         self.expectedUpperLimit = expectedUpperLimit
         self.predicted_yield = predicted_yield
         self.corr = corr
-        self.sigma_exp = self.getSigma()  # the expected scale, eq 3.24 in arXiv:1202.3415
-        self.denominator = np.sqrt(2.0) * self.sigma_exp
+        self.sigma_y = self.getSigmaY()  # the expected scale, eq 3.24 in arXiv:1202.3415
+        self.denominator = np.sqrt(2.0) * self.sigma_y
         self.cl = cl
 
     def likelihood ( self, mu : Union[float,None], nll : Optional[bool]=False, 
@@ -58,11 +58,21 @@ class TruncatedGaussians:
 
         :returns: likelihood (float), muhat, and sigma_mu
         """
+        sllhd = "llhd"
+        if nll:
+            sllhd = "nll"
         nsig = mu
+        muhat, sigma_mu = float("inf"), float("inf")
         if mu != None:
             nsig = mu * self.predicted_yield
-        return self.likelihoodOfNSig ( nsig, nll=nll,
+        dsig = self.likelihoodOfNSig ( nsig, nll=nll,
                 allowNegativeMuhat = allowNegativeMuhat, corr = corr )
+        if self.predicted_yield > 0.:
+             muhat, sigma_mu =  dsig["yhat"]/self.predicted_yield,\
+                dsig["sigma_y"] / self.predicted_yield
+
+        ret = { sllhd: dsig[sllhd], "muhat": muhat, "sigma_mu": sigma_mu }
+        return ret
 
     def likelihoodOfNSig ( self, nsig : Union[float,None], nll : Optional[bool]=False, 
             allowNegativeMuhat : Optional[bool] = True,
@@ -79,7 +89,7 @@ class TruncatedGaussians:
                      When comparing with likelihoods constructed from efficiency maps,
                      a factor of corr = 0.6 has been found to result in the best approximations.
 
-        :returns: likelihood (float), muhat, and sigma_mu
+        :returns: likelihood (float), yhat, and sigma_y
         """
         sllhd = "llhd"
         if nll:
@@ -90,49 +100,50 @@ class TruncatedGaussians:
             if allowNegativeMuhat:
                 xa = -self.expectedUpperLimit
                 xb = 1
-                muhat = self.find_neg_muhat( xa, xb )
-                self.llhd_ = self.llhd(nsig, muhat, nll = False )
+                yhat = self.find_neg_yhat( xa, xb )
+                self.llhd_ = self.llhd(nsig, yhat, nll = False )
                 ret = self.llhd_
                 if nll:
                     ret = -math.log(ret)
-                return { sllhd: ret, "muhat": muhat, "sigma_mu": self.sigma_exp }
+                return { sllhd: ret, "yhat": yhat, "sigma_y": self.sigma_y }
             else:
                 self.llhd_ = self.llhd(nsig, 0.0, nll = False )
                 ret = self.llhd_
                 if nll:
                     ret = -math.log(ret)
-                return { sllhd: ret, "muhat": 0.0, "sigma_mu": self.sigma_exp }
+                return { sllhd: ret, "yhat": 0.0, "sigma_y": self.sigma_y }
 
-        muhat = self.findMuhat()
-        self.llhd_ = self.llhd(nsig, muhat, nll = False )
+        yhat = self.findYhat()
+        self.llhd_ = self.llhd(nsig, yhat, nll = False )
         ret = self.llhd_
         if nll:
             ret = -math.log(ret)
-        return { sllhd: ret, "muhat": muhat, "sigma_mu": self.sigma_exp }
+        return { sllhd: ret, "yhat": yhat, "sigma_y": self.sigma_y }
 
-    def findMuhat ( self ):
+    def findYhat ( self ):
+        """ find the signal yields that maximize the likelihood """
         fA = self.root_func(0.0)
         fB = self.root_func(max(self.upperLimit, self.expectedUpperLimit))
         if np.sign(fA * fB) > 0.0:
             ## the have the same sign
             logger.error("when computing likelihood: fA and fB have same sign")
             return None, None, None
-        muhat = optimize.brentq(
+        yhat = optimize.brentq(
             self.root_func, 0.0, max(self.upperLimit, self.expectedUpperLimit), 
             rtol=1e-03, xtol=1e-06)
-        return muhat
+        return yhat
 
-    def getSigma(self, muhat=0.0 ):
+    def getSigmaY(self, yhat=0.0 ):
         """get the standard deviation sigma, given
         an upper limit and a central value. assumes a truncated Gaussian likelihood"""
         # the expected scale, eq 3.24 in arXiv:1202.3415
-        return ( self.expectedUpperLimit - muhat) / 1.96
+        return ( self.expectedUpperLimit - yhat) / 1.96
 
     def root_func(self,x):  # we want the root of this one
         return (erf((self.upperLimit - x) / self.denominator) + erf(x / self.denominator)) / (
             1.0 + erf(x / self.denominator)) - self.cl
 
-    def find_neg_muhat(self, xa, xb):
+    def find_neg_yhat(self, xa, xb):
         c = 0
         while self.root_func(xa) * self.root_func(xb) > 0:
             xa = 2 * xa
@@ -150,12 +161,12 @@ class TruncatedGaussians:
             nsig = muhat
         # need to account for the truncation!
         # first compute how many sigmas left of center is 0.
-        Zprime = muhat / self.sigma_exp
+        Zprime = muhat / self.sigma_y
         # now compute the area of the truncated gaussian
         A = stats.norm.cdf(Zprime)
         if nll:
-            return np.log(A) - stats.norm.logpdf(nsig, muhat, self.sigma_exp)
-        return float(stats.norm.pdf(nsig, muhat, self.sigma_exp) / A)
+            return np.log(A) - stats.norm.logpdf(nsig, muhat, self.sigma_y)
+        return float(stats.norm.pdf(nsig, muhat, self.sigma_y) / A)
 
     def chi2( self, likelihood = None ):
         """compute the chi2 value from a likelihood (convenience function).
@@ -165,7 +176,7 @@ class TruncatedGaussians:
             if not hasattr ( self, "llhd_" ):
                 raise SModelSError ( "asking for chi2 but no likelihood given" )
             likelihood = self.llhd_
-        l0 = 2.0 * stats.norm.logpdf(0.0, 0.0, self.sigma_exp)
+        l0 = 2.0 * stats.norm.logpdf(0.0, 0.0, self.sigma_y)
         l = deltaChi2FromLlhd(likelihood)
         if l is None:
             return None
@@ -184,7 +195,7 @@ class TruncatedGaussians:
         muhat = self.findMuhat()
         ret = []
         while len(ret) < n:
-            tmp = stats.norm.rvs(muhat, self.sigma_exp)
+            tmp = stats.norm.rvs(muhat, self.sigma_y)
             if tmp > 0.0:
                 ret.append(tmp)
         return ret

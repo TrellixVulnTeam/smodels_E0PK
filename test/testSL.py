@@ -14,7 +14,9 @@ sys.path.insert(0, "../")
 import unittest
 from smodels.tools.simplifiedLikelihoods import Data, UpperLimitComputer, \
       LikelihoodComputer
+from smodels.tools.physicsUnits import fb
 from numpy import sqrt
+import numpy as np
 
 
 class SLTest(unittest.TestCase):
@@ -155,6 +157,38 @@ class SLTest(unittest.TestCase):
         self.assertAlmostEqual( ulProf/75.29914, 1.0, 3 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize=True )
         self.assertAlmostEqual ( ul/78.5094475, 1., 1 )
+
+    def testTrivialModel ( self ):
+        def pprint ( *args ):
+            return
+            print ( " ".join ( map ( str, args ) ) )
+        name = "Trivial Model"
+        observed = [ 3., 3. ]
+        background = [ 1., 1. ]
+        covariance = [[ 1., 0. ], [ 0., 1. ] ]
+        signal = [ 2., 2. ]
+        m=Data ( observed=observed,
+                  backgrounds=background,
+                  covariance= covariance,
+                  third_moment = [ 0. ] * 2,
+                  nsignal= signal,
+                  name="trivial model",deltas_rel=0., lumi = 100./fb )
+        lComp = LikelihoodComputer( m )
+        theta_hat = lComp.findThetaHat( signal )
+        pprint ( "theta_hat", theta_hat )
+        lmax = lComp.lmax()
+        lm = lComp.likelihood ( 1. )
+        muhat = lComp.muhat
+        pprint ( "muhat", muhat )
+        theta_hat = lComp.findThetaHat( muhat * np.array ( signal ) )
+        pprint ( "theta_hat", theta_hat )
+        self.assertAlmostEqual ( lmax, lm )
+        # mu_hat is (observed - background) / signal
+        # (as it's the same for all regions)
+        # it's 1.0
+        self.assertAlmostEqual ( lComp.muhat, 1. )
+        self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
+
 
 if __name__ == "__main__":
     unittest.main()

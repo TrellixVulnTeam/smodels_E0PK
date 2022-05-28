@@ -895,7 +895,7 @@ class LikelihoodComputer:
             return self.profileLikelihood(nsig, nll)
 
     def likelihood_beta(self, mu: float, marginalize: bool = False, nll: bool = False) -> float:
-        """compute likelihood for nsig, profiling the nuisances
+        """compute likelihood for mu, profiling or marginalizing the nuisances
         :param mu: float Parameter of interest, signal strength
         :param marginalize: if true, marginalize, if false, profile
         :param nll: return nll instead of likelihood

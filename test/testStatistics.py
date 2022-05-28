@@ -76,7 +76,7 @@ class StatisticsTest(unittest.TestCase):
         for nsig in [0, 5]:
             for allowNegatives in [False, True]:
                 computer = TruncatedGaussians ( 4.5, 5.45, nsig )
-                ret = computer.likelihoodOfNSig ( nsig,
+                ret = computer.likelihood ( mu=1.,
                        nll = False, allowNegativeMuhat = allowNegatives )
                 llhdlim, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
                 c = comparisons[allowNegatives][nsig]
@@ -108,9 +108,9 @@ class StatisticsTest(unittest.TestCase):
         dx = .5
         m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0.)
         llhdcomp = LikelihoodComputer(m)
-        llhddir = llhdcomp.likelihoodOfNSig(nsig)
+        llhddir = llhdcomp.likelihood(mu=1.)
         chi2dir = llhdcomp.chi2()
-        llhdmarg = llhdcomp.likelihoodOfNSig(nsig, marginalize=True)
+        llhdmarg = llhdcomp.likelihood(mu=1., marginalize=True)
         chi2marg = llhdcomp.chi2( marginalize=True)
         computer = TruncatedGaussians ( ulobs, ulexp, nsig )
         llhdlim, muhat, sigma_exp = computer.likelihood ( mu=1. )
@@ -165,7 +165,7 @@ class StatisticsTest(unittest.TestCase):
         nsig = (pred_signal_strength * expRes.globalInfo.lumi).asNumber()
         m = Data(4, 2.2, 1.1**2, None, nsignal=nsig, deltas_rel=0.2)
         computer = LikelihoodComputer(m)
-        dll = math.log(computer.likelihoodOfNSig(nsig, marginalize=False))
+        dll = math.log(computer.likelihood(mu=1., marginalize=False))
         self.assertAlmostEqual(ill, dll, places=2)
         dchi2 = computer.chi2( marginalize=False)
         # print ( "dchi2,ichi2",dchi2,ichi2)

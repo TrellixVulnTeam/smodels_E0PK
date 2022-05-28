@@ -977,9 +977,6 @@ class LikelihoodComputer:
         :return: chi2 (float)
 
         """
-        nsig = self.model.nsignal
-        # logger.error ( f"chi2! {nsig} {self.model.nsignal}" )
-        nsig = self.model.convert(nsig)
 
         # Compute the likelhood for the null hypothesis (signal hypothesis) H0:
         llhd = self.likelihood_beta(1., marginalize=marginalize, nll=True)
@@ -989,8 +986,8 @@ class LikelihoodComputer:
         if len(self.model.observed) == 1:
             # TODO this nsig initiation seems wrong and changing maxllhd to likelihood_beta
             # fails ./testStatistics.py : zero division error in L115
-            nsig = self.model.observed - self.model.backgrounds
-            maxllhd = self.likelihood(nsig, marginalize=marginalize, nll=True, mu = 1. )
+            dn = self.model.observed - self.model.backgrounds
+            maxllhd = self.likelihood(dn, marginalize=marginalize, nll=True, mu = 1. )
         else:
             maxllhd = self.lmax( marginalize=marginalize, nll=True, allowNegativeSignals=False)
         chi2 = 2 * (llhd - maxllhd)

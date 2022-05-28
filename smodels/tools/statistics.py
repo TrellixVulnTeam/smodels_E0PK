@@ -144,11 +144,11 @@ class TruncatedGaussians:
 
         return l + l0
 
-
+"""
 def likelihoodFromLimits(
     upperLimit, expectedUpperLimit, nsig, nll=False, allowNegativeMuhat=True, corr=0.6
 ):
-    """computes the likelihood from an expected and an observed upper limit.
+    computes the likelihood from an expected and an observed upper limit.
     :param upperLimit: observed upper limit, as a yield (i.e. unitless)
     :param expectedUpperLimit: expected upper limit, also as a yield
     :param nsig: number of signal events, if None then nsig = mumax
@@ -163,7 +163,6 @@ def likelihoodFromLimits(
                  a factor of corr = 0.6 has been found to result in the best approximations.
 
     :returns: likelihood (float), muhat, and sigma_mu
-    """
     assert upperLimit > 0.0
 
     if corr > 0.0 and upperLimit > expectedUpperLimit:
@@ -172,8 +171,8 @@ def likelihoodFromLimits(
         )
 
     def getSigma(ul, muhat=0.0):
-        """get the standard deviation sigma, given
-        an upper limit and a central value. assumes a truncated Gaussian likelihood"""
+        get the standard deviation sigma, given
+        an upper limit and a central value. assumes a truncated Gaussian likelihood
         # the expected scale, eq 3.24 in arXiv:1202.3415
         return (ul - muhat) / 1.96
 
@@ -231,6 +230,7 @@ def likelihoodFromLimits(
     )
     llhdexp = llhd(nsig, mumax, sigma_exp, nll)
     return llhdexp, mumax, sigma_exp
+"""
 
 def CLsfromNLL(
     nllA: float, nll0A: float, nll: float, nll0: float, return_type: Text = "CLs-alpha"
@@ -390,9 +390,9 @@ def chi2FromLmax(llhd, lmax):
         chi2 = 0.0
     return chi2
 
-
+"""
 def chi2FromLimits(likelihood, upperLimit, expectedUpperLimit, corr=0.0):
-    """compute the chi2 value from a likelihood (convenience function)."""
+    # compute the chi2 value from a likelihood (convenience function).
     if corr > 0.0 and upperLimit > expectedUpperLimit:
         expectedUpperLimit = expectedUpperLimit / (
             1.0 - corr * ((upperLimit - expectedUpperLimit) / (upperLimit + expectedUpperLimit))
@@ -404,3 +404,4 @@ def chi2FromLimits(likelihood, upperLimit, expectedUpperLimit, corr=0.0):
         return None
 
     return l + l0
+"""

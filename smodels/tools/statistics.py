@@ -31,8 +31,8 @@ class TruncatedGaussians:
         self.upperLimit = upperLimit
         self.expectedUpperLimit = expectedUpperLimit
         self.predicted_yield = predicted_yield
-        self.sigma_exp = getSigma(expectedUpperLimit)  # the expected scale, eq 3.24 in arXiv:1202.3415
-        self.denominator = np.sqrt(2.0) * sigma_exp
+        self.sigma_exp = self.getSigma()  # the expected scale, eq 3.24 in arXiv:1202.3415
+        self.denominator = np.sqrt(2.0) * self.sigma_exp
         self.cl = cl
 
     def likelihood ( self, mu : float, nll : Optional[bool]=False, 
@@ -75,12 +75,12 @@ class TruncatedGaussians:
         if self.upperLimit < self.expectedUpperLimit:
             ## underfluctuation. mumax = 0.
             if allowNegativeMuhat:
-                xa = -expectedUpperLimit
+                xa = -self.expectedUpperLimit
                 xb = 1
-                mumax = find_neg_mumax(upperLimit, expectedUpperLimit, xa, xb)
-                return self.llhd(nsig, mumax, sigma_exp, nll), mumax, sigma_exp
+                mumax = self.find_neg_mumax( xa, xb )
+                return self.llhd(nsig, mumax, nll), mumax, self.sigma_exp
             else:
-                return self.llhd(nsig, 0.0, sigma_exp, nll), 0.0, sigma_exp
+                return self.llhd(nsig, 0.0, nll), 0.0, self.sigma_exp
 
         fA = root_func(0.0)
         fB = root_func(max(self.upperLimit, self.expectedUpperLimit))
@@ -91,8 +91,8 @@ class TruncatedGaussians:
         mumax = optimize.brentq(
             root_func, 0.0, max(self.upperLimit, self.expectedUpperLimit), 
             rtol=1e-03, xtol=1e-06)
-        llhdexp = self.llhd(nsig, mumax, sigma_exp, nll)
-        return llhdexp, mumax, sigma_exp
+        llhdexp = self.llhd(nsig, mumax, nll)
+        return llhdexp, mumax, self.sigma_exp
 
     def getSigma(self, muhat=0.0 ):
         """get the standard deviation sigma, given
@@ -106,7 +106,7 @@ class TruncatedGaussians:
 
     def find_neg_mumax(self, xa, xb):
         c = 0
-        while root_func(xa) * root_func(xb) > 0:
+        while self.root_func(xa) * self.root_func(xb) > 0:
             xa = 2 * xa
             c += 1
             if c > 10:
@@ -117,17 +117,17 @@ class TruncatedGaussians:
         mumax = optimize.brentq(self.root_func, xa, xb, rtol=1e-03, xtol=1e-06)
         return mumax
 
-    def llhd( self, nsig, mumax, sigma_exp, nll):
+    def llhd( self, nsig, mumax, nll):
         if nsig is None:
             nsig = mumax
         # need to account for the truncation!
         # first compute how many sigmas left of center is 0.
-        Zprime = mumax / sigma_exp
+        Zprime = mumax / self.sigma_exp
         # now compute the area of the truncated gaussian
         A = stats.norm.cdf(Zprime)
         if nll:
-            return np.log(A) - stats.norm.logpdf(nsig, mumax, sigma_exp)
-        return float(stats.norm.pdf(nsig, mumax, sigma_exp) / A)
+            return np.log(A) - stats.norm.logpdf(nsig, mumax, self.sigma_exp)
+        return float(stats.norm.pdf(nsig, mumax, self.sigma_exp) / A)
 
 
 def likelihoodFromLimits(

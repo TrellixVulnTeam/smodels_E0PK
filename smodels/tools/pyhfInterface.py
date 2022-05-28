@@ -110,7 +110,7 @@ class PyhfData:
     :ivar nWS: number of workspaces = number of json files
     """
 
-    def __init__(self, nsignals, inputJsons, jsonFiles=None):
+    def __init__(self, nsignals, inputJsons, jsonFiles=None ):
         self.nsignals = nsignals  # fb
         self.inputJsons = inputJsons
         self.cached_likelihoods = {}  ## cache of likelihoods (actually twice_nlls)
@@ -210,7 +210,7 @@ class PyhfUpperLimitComputer:
     Class that computes the upper limit using the jsons files and signal informations in the `data` instance of `PyhfData`
     """
 
-    def __init__(self, data, cl=0.95, includeCRs=False):
+    def __init__(self, data, cl=0.95, includeCRs=False, lumi=None ):
         """
         :param data: instance of `PyhfData` holding the signals information
         :param cl: confdence level at which the upper limit is desired to be computed
@@ -229,6 +229,7 @@ class PyhfUpperLimitComputer:
         :ivar alreadyBeenThere: boolean flag that identifies when the :ivar nsignals: accidentally passes twice at two identical values
         """
         self.data = data
+        self.lumi = lumi
         self.nsignals = self.data.nsignals
         logger.debug("Signals : {}".format(self.nsignals))
         self.inputJsons = self.data.inputJsons
@@ -521,7 +522,7 @@ class PyhfUpperLimitComputer:
                 logger.debug("Workspace number %d has zero signals" % i_ws)
                 continue
             else:
-                ul = self.ulSigma(expected=True, workspace_index=i_ws)
+                ul = self.getUpperLimitOnMu(expected=True, workspace_index=i_ws)
             if ul == None:
                 continue
             if ul < ulMin:
@@ -681,11 +682,34 @@ class PyhfUpperLimitComputer:
             else:
                 return self.workspaces[workspace_index]
 
+    def getUpperLimitOnSigmaTimesEff(self, expected=False, workspace_index=None):
+        """
+        Compute the upper limit on the fiducial cross section sigma times efficiency:
+            - by default, the combination of the workspaces contained into self.workspaces
+            - if workspace_index is specified, self.workspace[workspace_index]
+              (useful for computation of the best upper limit)
+
+        :param expected:  - if set to `True`: uses expected SM backgrounds as signals
+                          - else: uses `self.nsignals`
+        :param workspace_index: - if different from `None`: index of the workspace to use
+                                  for upper limit
+                                - else: choose best combo
+        :return: the upper limit on sigma times eff at `self.cl` level (0.95 by default)
+        """
+
+        ul = self.getUpperLimitOnMu( expected=expected, workspace_index=workspace_index)
+        if ul == None:
+            return ul
+        if self.lumi is None:
+            logger.error(f"asked for upper limit on fiducial xsec, but no lumi given with the data")
+            return ul
+        return ul / self.lumi
+
     # Trying a new method for upper limit computation :
     # re-scaling the signal predictions so that mu falls in [0, 10] instead of
     # looking for mu bounds
     # Usage of the index allows for rescaling
-    def ulSigma(self, expected=False, workspace_index=None):
+    def getUpperLimitOnMu(self, expected=False, workspace_index=None):
         """
         Compute the upper limit on the signal strength modifier with:
             - by default, the combination of the workspaces contained into self.workspaces
@@ -707,7 +731,7 @@ class PyhfUpperLimitComputer:
                 "Values in x were outside bounds during a minimize step, clipping to bounds",
             )
             startUL = time.time()
-            logger.debug("Calling ulSigma")
+            logger.debug("Calling getUpperLimitOnMu")
             if self.data.errorFlag or self.workspaces == None:
                 # For now, this flag can only be turned on by PyhfData.checkConsistency
                 return None
@@ -852,7 +876,7 @@ class PyhfUpperLimitComputer:
             logger.debug("Starting brent bracketing")
             ul = optimize.brentq(root_func, lo_mu, hi_mu, rtol=1e-3, xtol=1e-3)
             endUL = time.time()
-            logger.debug("ulSigma elpased time : %1.4f secs" % (endUL - startUL))
+            logger.debug("getUpperLimitOnMu elpased time : %1.4f secs" % (endUL - startUL))
             self.data.cachedULs[expected][workspace_index] = ul * self.scale
             return ul * self.scale  # self.scale has been updated within self.rescale() method
 
@@ -935,13 +959,13 @@ if __name__ == "__main__":
         name="ATLAS-SUSY-2018-31 model",
     )
     ulComp = PyhfUpperLimitComputer(cl=0.95)
-    # uls = ulComp.ulSigma ( Data ( 15,17.5,3.2,0.00454755 ) )
+    # uls = ulComp.getUpperLimitOnMu ( Data ( 15,17.5,3.2,0.00454755 ) )
     # print ( "uls=", uls )
     ul_old = 131.828 * sum(
         nsignal
     )  # With respect to the older refernece value one must normalize the xsec
     print("old ul=", ul_old)
-    ul = ulComp.ulSigma(m)
+    ul = ulComp.getUpperLimitOnMu(m)
     print("ul (marginalized)", ul)
-    ul = ulComp.ulSigma(m, marginalize=False)
+    ul = ulComp.getUpperLimitOnMu(m, marginalize=False)
     print("ul (profiled)", ul)

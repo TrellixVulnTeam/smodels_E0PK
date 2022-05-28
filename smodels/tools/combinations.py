@@ -60,10 +60,7 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
             logger.warning("All signals are empty")
             return None
         ulcomputer = _getPyhfComputer(dataset, nsig)
-        ret = ulcomputer.ulSigma(expected=expected)
-        if ret == None:
-            return None
-        ret = ret / dataset.getLumi()
+        ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
         return ret
     else:
@@ -200,7 +197,8 @@ def _getPyhfComputer(dataset, nsig, normalize=True):
         includeCRs = dataset.globalInfo.includeCRs
     else:
         includeCRs = False
-    ulcomputer = PyhfUpperLimitComputer(data, includeCRs=includeCRs)
+    ulcomputer = PyhfUpperLimitComputer(data, includeCRs=includeCRs,
+                                        lumi=dataset.getLumi() )
     return ulcomputer
 
 

@@ -143,7 +143,7 @@ class SLTest(unittest.TestCase):
         m = self.createModel ( 10 )
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu( m, marginalize=False )
-        self.assertAlmostEqual( ulProf/105.521134, 1.0, 3 )
+        self.assertAlmostEqual( ulProf/105.521134, 1.0, 2 )
         ul = ulComp.getUpperLimitOnMu(m,marginalize=True)
         ## Nick's profiling code gets for n=10 ul=357.568
         self.assertAlmostEqual(ul / 106.37, 1.0, 1)

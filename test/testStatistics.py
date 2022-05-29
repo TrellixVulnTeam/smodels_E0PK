@@ -115,9 +115,9 @@ class StatisticsTest(unittest.TestCase):
         computer = TruncatedGaussians ( ulobs, ulexp, nsig )
         ret = computer.likelihood ( mu=1. )
         llhdlim, muhat, sigma_mu = ret["llhd"], ret["muhat"], ret["sigma_mu"]
-        self.assertAlmostEqual(llhdlim,0.003427964159300251)
-        self.assertAlmostEqual(muhat,0.23328649242374602)
-        self.assertAlmostEqual(sigma_mu,0.338419104966444)
+        self.assertAlmostEqual(llhdlim,0.003427964159300251,5)
+        self.assertAlmostEqual(muhat,0.23328649242374602,3)
+        self.assertAlmostEqual(sigma_mu,0.338419104966444,4)
         chi2lim = computer.chi2 ( ) # llhdlim )
         ## relative error on chi2, for this example is about 4%
         rel = abs(chi2lim - chi2marg) / chi2marg

@@ -188,6 +188,9 @@ class SLTest(unittest.TestCase):
         # it's 1.0
         self.assertAlmostEqual ( lComp.muhat, 1. )
         self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
+        ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
+        ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
+        self.assertAlmostEqual ( ulProf, 10.15174, 5 )
 
 
 if __name__ == "__main__":

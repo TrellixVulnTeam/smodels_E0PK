@@ -1106,8 +1106,9 @@ class UpperLimitComputer:
             ## the function to find the zero of (ie CLs - alpha)
             # TODO convert rel_signals to signals
             nsig = getattr(model, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu)
-            nll = computer.likelihoodOfNSig(nsig, marginalize=marginalize, nll=True)
-            nllA = compA.likelihoodOfNSig(nsig, marginalize=marginalize, nll=True)
+            mur = mu / sum(model.nsignal)
+            nll = computer.likelihood(mur, marginalize=marginalize, nll=True)
+            nllA = compA.likelihood(mur, marginalize=marginalize, nll=True)
             return CLsfromNLL(nllA, nll0A, nll, nll0, return_type=return_type)
 
         return mu_hat, sigma_mu, clsRoot

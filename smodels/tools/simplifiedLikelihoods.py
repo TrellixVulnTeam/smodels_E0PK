@@ -491,7 +491,6 @@ class LikelihoodComputer:
         :params nll: if True, compute negative log likelihood"""
         # theta = array ( thetaA )
         # ntot = self.model.backgrounds + self.nsig
-        # lmbda = theta + self.ntot ## the lambda for the Poissonian
         if self.model.isLinear():
             lmbda = self.model.backgrounds + self.nsig + theta
         else:
@@ -657,11 +656,9 @@ class LikelihoodComputer:
         self.cov_tot = self.model.V
         # if self.model.n == 1:
         #    self.cov_tot = self.model.totalCovariance ( nsig )
-        # self.ntot = self.model.backgrounds + self.nsig
         # if not self.model.isLinear():
         # self.cov_tot = self.model.V + self.model.var_s(nsig)
         # self.cov_tot = self.model.totalCovariance (nsig)
-        # self.ntot = None
         self.weight = np.linalg.inv(self.cov_tot)
         # self.coeff = 1.
         logdet = np.linalg.slogdet(self.cov_tot)
@@ -852,7 +849,6 @@ class LikelihoodComputer:
         """
         # print ( f"likelihood {nsig[:2]} {self.model.nsignal[:2]} mu={mu}" )
         nsig = self.model.convert(nsig)
-        self.ntot = self.model.backgrounds + nsig
         if marginalize:
             # p,err = self.profileLikelihood ( nsig, deltas )
             return self.marginalizedLikelihood(nsig, nll)
@@ -868,7 +864,6 @@ class LikelihoodComputer:
         """
         # print ( f"likelihood {nsig[:2]} {self.model.nsignal[:2]} mu={mu}" )
         nsig = self.model.nsignal * mu
-        self.ntot = self.model.backgrounds + nsig
         if marginalize:
             # p,err = self.profileLikelihood ( nsig, deltas )
             return self.marginalizedLikelihood(nsig, nll)

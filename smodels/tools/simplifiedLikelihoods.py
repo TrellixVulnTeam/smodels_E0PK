@@ -988,8 +988,8 @@ class UpperLimitComputer:
         :returns: upper limit on fiducial cross section
         """
         ul = self.getUpperLimitOnMu(
-            model, marginalize=marginalize, toys=toys, expected=expected, trylasttime=trylasttime
-        )
+            model, marginalize=marginalize, toys=toys, expected=expected,
+            trylasttime=trylasttime)
 
         if ul == None:
             return ul

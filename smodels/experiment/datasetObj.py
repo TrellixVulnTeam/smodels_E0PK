@@ -341,7 +341,7 @@ class DataSet(object):
             obs = self.dataInfo.expectedBG
             if expected == "posteriori":
                 m = Data(
-                    obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel
+                    obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel, nsignal = 1.
                 )
                 computer = LikelihoodComputer(m)
                 thetahat = computer.findThetaHat(0.0)
@@ -356,7 +356,7 @@ class DataSet(object):
                     thetahat = float(thetahat[0])
                 obs = self.dataInfo.expectedBG + thetahat
 
-        m = Data(obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel)
+        m = Data(obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel, nsignal = 1. )
         computer = LikelihoodComputer(m)
         ret = computer.lmax(
             marginalize=marginalize, nll=False, allowNegativeSignals=allowNegativeSignals

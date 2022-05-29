@@ -1069,11 +1069,7 @@ class UpperLimitComputer:
             )
             marginalize = True
             # TODO convert rel_signals to signals
-            nll0 = computer.likelihood(
-                getattr(model, "signals" if signal_type == "signal_rel" else "nsignals")(mu_hat),
-                marginalize=True,
-                nll=True, mu = mu_hat,
-            )
+            nll0 = computer.likelihood( mu = mu_hat, marginalize=True, nll=True)
             if np.isinf(nll0):
                 logger.warning("marginalization didnt help either. switch back.")
                 marginalize = False
@@ -1110,7 +1106,6 @@ class UpperLimitComputer:
             ## the function to find the zero of (ie CLs - alpha)
             # TODO convert rel_signals to signals
             nsig = getattr(model, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu)
-            computer.ntot = model.backgrounds + nsig
             nll = computer.likelihoodOfNSig(nsig, marginalize=marginalize, nll=True)
             nllA = compA.likelihoodOfNSig(nsig, marginalize=marginalize, nll=True)
             return CLsfromNLL(nllA, nll0A, nll, nll0, return_type=return_type)

@@ -1089,12 +1089,13 @@ class UpperLimitComputer:
         if signal_type == "signal_rel":
             mu_hatA = mu_hatA * sum ( aModel.nsignal)
         # TODO convert rel_signals to signals
-        nll0A = compA.likelihoodOfNSig(
-            getattr(aModel, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu_hatA),
-            marginalize=marginalize,
-            nll=True,
-        )
-        # print ( f"SL nll0A {nll0A:.3f} mu_hatA {mu_hatA:.3f} bg {aModel.backgrounds[0]:.3f} obs {aModel.observed[0]:.3f}" )
+        nll0A = compA.likelihood( mu=mu_hatA, marginalize=marginalize, nll=True)
+        #nll1A = compA.likelihoodOfNSig(
+        #    getattr(aModel, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu_hatA),
+        #    marginalize=marginalize,
+        #    nll=True,
+        #)
+        #print ( f"SL nll0A {nll0A:.3f} mu_hatA {mu_hatA:.3f} nll1A {nll1A:.3f}" )
         # return 1.
 
         def clsRoot(mu: float, return_type: Text = "CLs-alpha") -> float:

@@ -483,14 +483,6 @@ class LikelihoodComputer:
                 hessian = sum(nsig**2 / n_pred)
         stderr = float(np.sqrt(1.0 / hessian))
         return stderr
-        """
-        if type(nsig) in [ list, ndarray ]:
-            s_effs = sum(nsig)
-
-        sgm_mu = float(sqrt(sum(self.model.observed) + sum(np.diag(self.model.covariance)))/s_effs)
-
-        return sgm_mu
-        """
 
     # Define integrand (gaussian_(bg+signal)*poisson(nobs)):
     # def prob(x0, x1 )
@@ -1050,29 +1042,24 @@ class UpperLimitComputer:
         if expected:
             model = copy.deepcopy(oldmodel)
             if expected == "posteriori":
-                # print ( "here!" )
                 tempc = LikelihoodComputer(oldmodel, toys)
                 theta_hat_, _ = tempc.findThetaHat(0 * oldmodel.nsignal )
-            # model.observed = model.backgrounds
             for i, d in enumerate(model.backgrounds):
-                # model.observed[i]=int(np.ceil(d))
-                # model.observed[i]=int(np.round(d))
                 if expected == "posteriori":
                     d += theta_hat_[i]
                 model.observed[i] = float(d)
         computer = LikelihoodComputer(model, toys)
         mu_hat = computer.findMuHat( allowNegativeSignals=False, extended_output=False)
-        if signal_type == "signal_rel":
-            mu_hat = mu_hat * sum(model.nsignal)
+        #if signal_type == "signal_rel":
+        #    mu_hat = mu_hat * sum(model.nsignal)
         theta_hat0, _ = computer.findThetaHat(0 * model.nsignal )
         if signal_type == "signal_rel":
             sigma_mu = computer.getSigmaMu(mu_hat/sum(model.nsignal), theta_hat0)
             sigma_mu = sigma_mu * sum(model.nsignal)
             # TODO convert rel_signals to signals
-            nll0 = computer.likelihoodOfNSig( model.rel_signals(mu_hat),
+            nll0 = computer.likelihood( mu = mu_hat,
                 marginalize=marginalize,
-                nll=True, mu = mu_hat,
-            )
+                nll=True )
         else:
             sigma_mu = computer.getSigmaMu(mu_hat, theta_hat0)
 
@@ -1080,7 +1067,7 @@ class UpperLimitComputer:
                 mu_hat,
                 marginalize=marginalize,
             )
-        # print ( f"SL nll0 {nll0:.3f} muhat {mu_hat:.3f} sigma_mu {sigma_mu:.3f}" )
+        # print ( f"SL nll0 {nll0:.3f} muhat {mu_hat:.3f} sigma_mu {sigma_mu:.3f} {signal_type} {sum(model.nsignal):.3f}" )
         if np.isinf(nll0) and not marginalize and not trylasttime:
             logger.warning(
                 "nll is infinite in profiling! we switch to marginalization, but only for this one!"

@@ -842,11 +842,11 @@ class LikelihoodComputer:
 
         return ret
 
+    """
     def likelihoodOfNSig(self, nsig, marginalize=False, nll=False, mu=None):
-        """compute likelihood for nsig, profiling the nuisances
+        compute likelihood for nsig, profiling the nuisances
         :param marginalize: if true, marginalize, if false, profile
         :param nll: return nll instead of likelihood
-        """
         # print ( f"likelihood {nsig[:2]} {self.model.nsignal[:2]} mu={mu}" )
         nsig = self.model.convert(nsig)
         if marginalize:
@@ -855,6 +855,7 @@ class LikelihoodComputer:
             # print ( "p,l=",p,l,p/l )
         else:
             return self.profileLikelihood(nsig, nll)
+    """
 
     def likelihood(self, mu: float, marginalize: bool = False, nll: bool = False) -> float:
         """compute likelihood for mu, profiling or marginalizing the nuisances

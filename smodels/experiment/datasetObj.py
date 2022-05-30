@@ -302,7 +302,7 @@ class DataSet(object):
         if expected:  # this step is done for prior and posterior expected
             obs = self.dataInfo.expectedBG
 
-        m = Data(obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel)
+        m = Data(obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel, nsignal = nsig )
         computer = LikelihoodComputer(m)
         if expected == "posteriori":
             thetahat = computer.findThetaHat(0.0)
@@ -311,12 +311,11 @@ class DataSet(object):
 
             obs = self.dataInfo.expectedBG + thetahat
             m = Data(
-                obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel
-            )
+                obs, self.dataInfo.expectedBG, self.dataInfo.bgError**2, deltas_rel=deltas_rel, nsignal = nsig)
             # if abs ( nsig[0]-1 ) < 1e-5:
             #    print ( f"COMB ebg={self.dataInfo.expectedBG:.3f} obs={obs:.3f} nsig {nsig[0]:.3f}" )
             computer = LikelihoodComputer(m)
-        ret = computer.likelihoodOfNSig(nsig, marginalize=marginalize)
+        ret = computer.likelihood(1., marginalize=marginalize)
         if hasattr(computer, "theta_hat"):
             ## seems like someone wants to debug them
             self.theta_hat = computer.theta_hat

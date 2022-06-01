@@ -702,13 +702,13 @@ class LikelihoodComputer:
             raise Exception("cov-1=%s" % (self.model.covariance + self.model.var_s(nsig)) ** (-1))
         return ini, -1
 
-    def marginalizedLLHD1D(self, nsig, nll):
+    def marginalizedLLHD1D(self, mu, nll):
         """
         Return the likelihood (of 1 signal region) to observe nobs events given the
         predicted background nb, error on this background (deltab),
-        expected number of signal events nsig and the relative error on the signal (deltas_rel).
+        signal strength of mu and the relative error on the signal (deltas_rel).
 
-        :param nsig: predicted signal (float)
+        :param mu: predicted signal strength (float)
         :param nobs: number of observed events (float)
         :param nb: predicted background (float)
         :param deltab: uncertainty on background (float)
@@ -716,6 +716,7 @@ class LikelihoodComputer:
         :return: likelihood to observe nobs events (float)
 
         """
+        nsig = self.model.nsignal * mu
         self.sigma2 = self.model.covariance + self.model.var_s(nsig)  ## (self.model.deltas)**2
         self.sigma_tot = sqrt(self.sigma2)
         self.lngamma = math.lgamma(self.model.observed[0] + 1)
@@ -791,12 +792,13 @@ class LikelihoodComputer:
 
         return like[0][0]
 
-    def marginalizedLikelihood(self, nsig, nll):
+    def marginalizedLikelihood(self, mu, nll):
         """compute the marginalized likelihood of observing nsig signal event"""
         if (
             self.model.isLinear() and self.model.n == 1
         ):  ## 1-dimensional non-skewed llhds we can integrate analytically
-            return self.marginalizedLLHD1D(nsig, nll)
+            return self.marginalizedLLHD1D(mu, nll)
+        nsig = mu * self.model.nsignal
 
         vals = []
         self.gammaln = special.gammaln(self.model.observed + 1)
@@ -828,11 +830,12 @@ class LikelihoodComputer:
             mean = -log(mean)
         return mean
 
-    def profileLikelihood(self, nsig, nll):
-        """compute the profiled likelihood for nsig.
+    def profileLikelihood(self, mu, nll ):
+        """compute the profiled likelihood for mu.
         Warning: not normalized.
         Returns profile likelihood and error code (0=no error)
         """
+        nsig = self.model.nsignal * mu
         # compute the profiled (not normalized) likelihood of observing
         # nsig signal events
         theta_hat, _ = self.findThetaHat(nsig)
@@ -842,21 +845,6 @@ class LikelihoodComputer:
 
         return ret
 
-    """
-    def likelihoodOfNSig(self, nsig, marginalize=False, nll=False, mu=None):
-        compute likelihood for nsig, profiling the nuisances
-        :param marginalize: if true, marginalize, if false, profile
-        :param nll: return nll instead of likelihood
-        # print ( f"likelihood {nsig[:2]} {self.model.nsignal[:2]} mu={mu}" )
-        nsig = self.model.convert(nsig)
-        if marginalize:
-            # p,err = self.profileLikelihood ( nsig, deltas )
-            return self.marginalizedLikelihood(nsig, nll)
-            # print ( "p,l=",p,l,p/l )
-        else:
-            return self.profileLikelihood(nsig, nll)
-    """
-
     def likelihood(self, mu: float, marginalize: bool = False, nll: bool = False) -> float:
         """compute likelihood for mu, profiling or marginalizing the nuisances
         :param mu: float Parameter of interest, signal strength
@@ -864,13 +852,12 @@ class LikelihoodComputer:
         :param nll: return nll instead of likelihood
         """
         # print ( f"likelihood {nsig[:2]} {self.model.nsignal[:2]} mu={mu}" )
-        nsig = self.model.nsignal * mu
         if marginalize:
             # p,err = self.profileLikelihood ( nsig, deltas )
-            return self.marginalizedLikelihood(nsig, nll)
+            return self.marginalizedLikelihood(mu, nll)
             # print ( "p,l=",p,l,p/l )
         else:
-            return self.profileLikelihood(nsig, nll)
+            return self.profileLikelihood(mu, nll)
 
     def lmax(self, marginalize=False, nll=False, allowNegativeSignals=False):
         """convenience function, computes likelihood for nsig = nobs-nbg,

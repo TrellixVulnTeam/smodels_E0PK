@@ -984,7 +984,8 @@ class UpperLimitComputer:
         if model.lumi is None:
             logger.error(f"asked for upper limit on fiducial xsec, but no lumi given with the data")
             return ul
-        return ul / model.lumi
+        xsec = sum(model.nsignal) / model.lumi
+        return ul * xsec
 
     def _ul_preprocess(
         self,
@@ -1125,6 +1126,9 @@ class UpperLimitComputer:
             return None
         a, b = determineBrentBracket(mu_hat, sigma_mu, clsRoot)
         mu_lim = optimize.brentq(clsRoot, a, b, rtol=1e-03, xtol=1e-06)
+        # contrary to what it says, its an upper limit on yields,
+        # so translate into an UL on mu
+        mu_lim /= sum ( model.nsignal )
         return mu_lim
 
     def computeCLs(
@@ -1151,7 +1155,9 @@ class UpperLimitComputer:
                         CLs: returns CLs value
         """
         _, _, clsRoot = self._ul_preprocess(model, marginalize, toys, expected, trylasttime)
-        return clsRoot(1.0, return_type=return_type)
+        ret = clsRoot(1.0, return_type=return_type)
+        # its not an uppser limit on mu, its on nsig
+        return ret
 
 
 if __name__ == "__main__":

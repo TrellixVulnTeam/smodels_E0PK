@@ -40,7 +40,7 @@ class TruncatedGaussians:
         if type(lumi) != type(None) and type(upperLimit) == type(fb):
             upperLimit = float ( upperLimit * lumi )
             expectedUpperLimit = float ( expectedUpperLimit * lumi )
-            predicted_yield = float ( predicted_yield * lumi )
+            predicted_yield = float ( predicted_yield * lumi ) # the xsec
         if corr > 0.0 and upperLimit > expectedUpperLimit:
             expectedUpperLimit = expectedUpperLimit / (
                 1.0 - corr * ((upperLimit - expectedUpperLimit) / (upperLimit + expectedUpperLimit))

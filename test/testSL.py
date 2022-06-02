@@ -55,8 +55,8 @@ class SLTest(unittest.TestCase):
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ul = ulComp.getUpperLimitOnMu(m, marginalize=True )
         ulProf = ulComp.getUpperLimitOnMu(m, marginalize=False )
-        self.assertAlmostEqual(ul/(3049.*sum(m.nsignal)), 1., 1 )
-        self.assertAlmostEqual(ulProf/(1920.*sum(m.nsignal)), 1., 1 )
+        self.assertAlmostEqual(ul, 3049.617040116002, 1 )
+        self.assertAlmostEqual(ulProf, 1920.7547785412298, 1 )
 
     def testModel8(self):
         C=[ 18774.2, -2866.97,-5807.3,-4460.52,-2777.25,-1572.97, -846.653, -442.531,
@@ -76,9 +76,9 @@ class SLTest(unittest.TestCase):
                   name="CMS-NOTE-2017-001 model",deltas_rel=0. )
         ulComp = UpperLimitComputer (ntoys=2000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
-        self.assertAlmostEqual( ulProf/180.676, 1.0, 3 )
+        self.assertAlmostEqual( ulProf / 131.58637474312224, 1.0, 3 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize = True )
-        self.assertAlmostEqual( ul/186.609514, 1.0, 1 )
+        self.assertAlmostEqual( ul / 132.75018479789006, 1., 1 )
 
     def createModel(self,n=3):
         import model_90 as m9
@@ -103,10 +103,10 @@ class SLTest(unittest.TestCase):
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         lComp = LikelihoodComputer( m )
         ulProf = ulComp.getUpperLimitOnMu( m, marginalize=False )
-        self.assertAlmostEqual( ulProf/54.793636190198924, 1.0, 3 )
+        self.assertAlmostEqual( ulProf / 2168.8056715301045, 1.0, 3 )
         ul = ulComp.getUpperLimitOnMu( m, marginalize=True )
         ## Nick's profiling code gets for n=3 ul=2135.66
-        self.assertAlmostEqual(ul / 55.554, 1.0, 1)
+        self.assertAlmostEqual(ul / 2195.3529619253704, 1.0, 1)
         lmax = lComp.lmax ( )
         self.assertAlmostEqual( lmax, 2.1722054152e-09, 7 )
         self.assertAlmostEqual( lComp.muhat, 0. )
@@ -143,10 +143,10 @@ class SLTest(unittest.TestCase):
         m = self.createModel ( 10 )
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu( m, marginalize=False )
-        self.assertAlmostEqual( ulProf/105.521134, 1.0, 2 )
+        self.assertAlmostEqual( ulProf / 365.6091713369213, 1.0, 2 )
         ul = ulComp.getUpperLimitOnMu(m,marginalize=True)
         ## Nick's profiling code gets for n=10 ul=357.568
-        self.assertAlmostEqual(ul / 106.37, 1.0, 1)
+        self.assertAlmostEqual(ul / 371.047747734418, 1.0, 1)
 
     def testModel40(self):
         m = self.createModel(40)
@@ -154,9 +154,9 @@ class SLTest(unittest.TestCase):
 
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
-        self.assertAlmostEqual( ulProf/75.29914, 1.0, 3 )
+        self.assertAlmostEqual( ulProf / 61.53473539725907, 1.0, 3 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize=True )
-        self.assertAlmostEqual ( ul/78.5094475, 1., 1 )
+        self.assertAlmostEqual ( ul/65.20823799033607, 1., 1 )
 
     def testTrivialModel ( self ):
         def pprint ( *args ):
@@ -167,6 +167,7 @@ class SLTest(unittest.TestCase):
         background = [ 1., 1. ]
         covariance = [[ 1., 0. ], [ 0., 1. ] ]
         signal = [ 2., 2. ]
+        pprint ( "nsignal", sum(signal) )
         m=Data ( observed=observed,
                   backgrounds=background,
                   covariance= covariance,
@@ -183,16 +184,16 @@ class SLTest(unittest.TestCase):
         pprint ( "muhat", muhat, "sigma_mu", sigma_mu )
         theta_hat = lComp.findThetaHat( muhat * np.array ( signal ) )
         pprint ( "theta_hat", theta_hat )
-        self.assertAlmostEqual ( lmax, lm )
         # mu_hat is (observed - background) / signal
         # (as it's the same for all regions)
         # it's 1.0
-        self.assertAlmostEqual ( lComp.muhat, 1. )
-        self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
         pprint ( "ulProf", ulProf )
-        self.assertAlmostEqual ( ulProf, 10.15174, 5 )
+        self.assertAlmostEqual ( lmax, lm )
+        self.assertAlmostEqual ( lComp.muhat, 1. )
+        self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
+        self.assertAlmostEqual ( ulProf, 2.537934980801342, 5 )
 
 
 if __name__ == "__main__":

@@ -101,12 +101,14 @@ class StatisticsTest(unittest.TestCase):
         """test the chi2 value that we obtain from limits"""
         nsig = 35.0
         nobs, nbg = 110, 100.0
-        m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0.0)
+        m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0.0, lumi = 1.)
         ulcomp = UpperLimitComputer()
-        ulobs = ulcomp.getUpperLimitOnMu(m)
-        ulexp = ulcomp.getUpperLimitOnMu(m, expected=True)
+        #ulobs = ulcomp.getUpperLimitOnMu(m)
+        #ulexp = ulcomp.getUpperLimitOnMu(m, expected=True)
+        ulobs = ulcomp.getUpperLimitOnSigmaTimesEff(m)
+        ulexp = ulcomp.getUpperLimitOnSigmaTimesEff(m, expected=True)
         dx = .5
-        m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0.)
+        m = Data(nobs, nbg, 0.001, None, nsig, deltas_rel=0. )
         llhdcomp = LikelihoodComputer(m)
         llhddir = llhdcomp.likelihood(mu=1.)
         chi2dir = llhdcomp.chi2()

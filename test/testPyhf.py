@@ -214,7 +214,7 @@ class PyhfTest(unittest.TestCase):
         data = PyhfData([[0.1], [0.2]], ws)
         ulcomputer = PyhfUpperLimitComputer(data)
         ul = ulcomputer.getUpperLimitOnMu()
-        self.assertAlmostEqual(ul, 70.44942596708917, 1)
+        self.assertAlmostEqual(ul, 234.83141989029718, 1)
         # self.assertIsNone(ul)
 
     def testLmax(self):
@@ -254,6 +254,7 @@ class PyhfTest(unittest.TestCase):
         data = PyhfData([signals], [bkg])
         ulcomputer = PyhfUpperLimitComputer(data)
         ul = ulcomputer.getUpperLimitOnMu()
+        ul = ul * data.totalYield()
         # Computing the cls outside of SModelS with POI = ul, should give 0.95
         msettings = {"normsys": {"interpcode": "code4"}, "histosys": {"interpcode": "code4p"}}
         workspace = pyhf.Workspace(llhdSpec)
@@ -299,6 +300,7 @@ class PyhfTest(unittest.TestCase):
         data = PyhfData([signals], [bkg])
         ulcomputer = PyhfUpperLimitComputer(data)
         ul = ulcomputer.getUpperLimitOnMu()
+        ul = ul * data.totalYield()
         # Computing the cls outside of SModelS with POI = ul, should give 0.95
         msettings = {"normsys": {"interpcode": "code4"}, "histosys": {"interpcode": "code4p"}}
         workspace = pyhf.Workspace(llhdSpec)

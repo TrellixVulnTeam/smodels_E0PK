@@ -126,6 +126,11 @@ class PyhfData:
         self.getWSInfo()
         self.checkConsistency()
 
+    def totalYield ( self ):
+        """ the total yield in all signal regions """
+        S = sum ( [ sum(x) for x in self.nsignals ] )
+        return S
+
     def getWSInfo(self):
         """
         Getting informations from the json files
@@ -703,7 +708,8 @@ class PyhfUpperLimitComputer:
         if self.lumi is None:
             logger.error(f"asked for upper limit on fiducial xsec, but no lumi given with the data")
             return ul
-        return ul / self.lumi
+        xsec = self.data.totalYield() / self.lumi
+        return ul * xsec
 
     # Trying a new method for upper limit computation :
     # re-scaling the signal predictions so that mu falls in [0, 10] instead of
@@ -878,6 +884,8 @@ class PyhfUpperLimitComputer:
             endUL = time.time()
             logger.debug("getUpperLimitOnMu elpased time : %1.4f secs" % (endUL - startUL))
             self.data.cachedULs[expected][workspace_index] = ul * self.scale
+            # the ul is actually on yields
+            ul = ul / self.data.totalYield()
             return ul * self.scale  # self.scale has been updated within self.rescale() method
 
 

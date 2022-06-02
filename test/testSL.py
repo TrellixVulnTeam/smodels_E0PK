@@ -179,7 +179,8 @@ class SLTest(unittest.TestCase):
         lmax = lComp.lmax()
         lm = lComp.likelihood ( 1. )
         muhat = lComp.muhat
-        pprint ( "muhat", muhat )
+        sigma_mu = lComp.sigma_mu
+        pprint ( "muhat", muhat, "sigma_mu", sigma_mu )
         theta_hat = lComp.findThetaHat( muhat * np.array ( signal ) )
         pprint ( "theta_hat", theta_hat )
         self.assertAlmostEqual ( lmax, lm )
@@ -190,6 +191,7 @@ class SLTest(unittest.TestCase):
         self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
+        pprint ( "ulProf", ulProf )
         self.assertAlmostEqual ( ulProf, 10.15174, 5 )
 
 

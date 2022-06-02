@@ -400,7 +400,7 @@ class LikelihoodComputer:
             and abs(mu_hat - mu_hat_old) / (mu_hat + mu_hat_old) > 0.5e-2
             and ctr < 20
         ):
-            theta_hat, _ = self.findThetaHat(mu_hat * nsig)
+            theta_hat, _ = self.findThetaHat(mu_hat)
             ctr += 1
             mu_hat_old = mu_hat
             minr, avgr, maxr = self.findAvgr(mu_hat, theta_hat, nsig)
@@ -438,7 +438,7 @@ class LikelihoodComputer:
             mu_hat = optimize.brentq(self.dNLLdMu, lower, upper, args=(theta_hat, ), rtol=1e-9)
             if not allowNegativeSignals and mu_hat < 0.0:
                 mu_hat = 0.0
-                theta_hat, _ = self.findThetaHat(mu_hat * nsig)
+                theta_hat, _ = self.findThetaHat(mu_hat)
             if self.debug_mode:
                 self.theta_hat = theta_hat
 
@@ -643,10 +643,11 @@ class LikelihoodComputer:
                     return thetamax
         return thetamax
 
-    def findThetaHat(self, nsig):
+    def findThetaHat(self, mu ):
         """Compute nuisance parameter theta that maximizes our likelihood
         (poisson*gauss).
         """
+        nsig = mu * self.model.nsignal
 
         ## first step is to disregard the covariances and solve the
         ## quadratic equations
@@ -835,10 +836,9 @@ class LikelihoodComputer:
         Warning: not normalized.
         Returns profile likelihood and error code (0=no error)
         """
-        nsig = self.model.nsignal * mu
         # compute the profiled (not normalized) likelihood of observing
         # nsig signal events
-        theta_hat, _ = self.findThetaHat(nsig)
+        theta_hat, _ = self.findThetaHat(mu)
         if self.debug_mode:
             self.theta_hat = theta_hat
         ret = self.probMV(nll, theta_hat)

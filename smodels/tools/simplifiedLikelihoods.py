@@ -388,7 +388,7 @@ class LikelihoodComputer:
         ## we need a very rough initial guess for mu(hat), to come
         ## up with a first theta
         # self.nsig = array([0.]*len(self.model.observed))
-        self.nsig = nsig
+        self.mu = 1.
         ## we start with theta_hat being all zeroes
         # theta_hat = array([0.]*len(self.model.observed))
         mu_hat_old, mu_hat = 0.0, 1.0
@@ -490,10 +490,11 @@ class LikelihoodComputer:
         :params nll: if True, compute negative log likelihood"""
         # theta = array ( thetaA )
         # ntot = self.model.backgrounds + self.nsig
+        nsig = self.mu * self.model.nsignal
         if self.model.isLinear():
-            lmbda = self.model.backgrounds + self.nsig + theta
+            lmbda = self.model.backgrounds + nsig + theta
         else:
-            lmbda = self.nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
+            lmbda = nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
         lmbda[lmbda <= 0.0] = 1e-30  ## turn zeroes to small values
         obs = self.model.observed
 
@@ -550,12 +551,13 @@ class LikelihoodComputer:
         """the derivative of nll as a function of the thetas.
         Makes it easier to find the maximum likelihood."""
         # print ( f"nsig {self.nsig} {self.model.nsignal}" )
+        nsig = self.mu * self.model.nsignal
         if self.model.isLinear():
-            xtot = theta + self.model.backgrounds + self.nsig
+            xtot = theta + self.model.backgrounds + nsig
             xtot[xtot <= 0.0] = 1e-30  ## turn zeroes to small values
             nllp_ = self.ones - self.model.observed / xtot + np.dot(theta, self.weight)
             return nllp_
-        lmbda = self.nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
+        lmbda = nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
         lmbda[lmbda <= 0.0] = 1e-30  ## turn zeroes to small values
         # nllp_ = ( self.ones - self.model.observed / lmbda + np.dot( theta , self.weight ) ) * ( self.ones + 2*self.model.C * theta / self.model.B**2 )
         T = self.ones + 2 * self.model.C / self.model.B**2 * theta
@@ -566,12 +568,13 @@ class LikelihoodComputer:
         """the Hessian of nll as a function of the thetas.
         Makes it easier to find the maximum likelihood."""
         # xtot = theta + self.ntot
+        nsig = self.mu * self.model.nsignal
         if self.model.isLinear():
-            xtot = theta + self.model.backgrounds + self.nsig
+            xtot = theta + self.model.backgrounds + nsig
             xtot[xtot <= 0.0] = 1e-30  ## turn zeroes to small values
             nllh_ = self.weight + np.diag(self.model.observed / (xtot**2))
             return nllh_
-        lmbda = self.nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
+        lmbda = nsig + self.model.A + theta + self.model.C * theta**2 / self.model.B**2
         lmbda[lmbda <= 0.0] = 1e-30  ## turn zeroes to small values
         T = self.ones + 2 * self.model.C / self.model.B**2 * theta
         # T_i = 1_i + 2*c_i/B_i**2 * theta_i
@@ -590,7 +593,7 @@ class LikelihoodComputer:
         :returns: theta_hat
         """
         nsig = mu * self.model.nsignal
-        self.nsig = nsig
+        self.mu = mu
         sigma2 = covb + self.model.var_s(nsig)  ## np.diag ( (self.model.deltas)**2 )
         ## for now deal with variances only
         ntot = nb + nsig

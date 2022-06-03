@@ -334,19 +334,19 @@ class LikelihoodComputer:
             return ret
         return default
 
-    def findAvgr(self, mu, theta_hat, signal_rel):
+    def findAvgr(self, mu, theta_hat ):
         """from the difference observed - background, find got inital
         values for lower and upper"""
         mu_c = self.model.observed - self.model.backgrounds - theta_hat
         mu_r, wmu_r = [], []
-        n_pred = mu * signal_rel + self.model.backgrounds + theta_hat
+        n_pred = mu * self.model.nsignal + self.model.backgrounds + theta_hat
         obs = self.model.observed
         for i, s in enumerate(n_pred):
             if s == 0.0:
                 n_pred[i] = 1e-6
-        hessian = self.model.observed * signal_rel**2 / n_pred**2
+        hessian = self.model.observed * self.model.nsignal**2 / n_pred**2
         wtot = 0.0
-        for s in zip(mu_c, signal_rel, hessian):
+        for s in zip(mu_c, self.model.nsignal, hessian):
             if s[1] > 1e-10:
                 w = 1.0
                 if s[2] > 0.0:
@@ -402,7 +402,7 @@ class LikelihoodComputer:
             theta_hat, _ = self.findThetaHat(mu_hat)
             ctr += 1
             mu_hat_old = mu_hat
-            minr, avgr, maxr = self.findAvgr(mu_hat, theta_hat, nsig)
+            minr, avgr, maxr = self.findAvgr(mu_hat, theta_hat )
             # for i,s in enumerate ( signal_rel ):
             #    if abs(s) < 1e-19:
             #        mu_c[i]=0.

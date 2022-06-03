@@ -588,10 +588,15 @@ class LikelihoodComputer:
 
     def getThetaHat(self, nobs, nb, mu, covb, max_iterations):
         """ Compute nuisance parameter theta that
-            maximizes our likelihood (poisson*gauss) -- a first guess!
+            maximizes our likelihood (poisson*gauss) -- by setting dNLL/dTheta
+            to zero
         :param mu: signal strength
         :returns: theta_hat
         """
+        # ntot = mu * nsig + nb
+        # nll = - nobs ln(ntot + theta) - ntot - theta - theta**2/(2 delta**2)
+        # dnll/dtheta = - nobs / ( ntot + theta ) + 1 + theta / delta**2
+        # theta**2 + theta * ( delta**2 + ntot ) + delta**2 * ( ntot-nobs) = 0
         nsig = mu * self.model.nsignal
         self.mu = mu
         sigma2 = covb + self.model.var_s(nsig)  ## np.diag ( (self.model.deltas)**2 )
@@ -605,7 +610,8 @@ class LikelihoodComputer:
         q = diag_cov * (ntot - nobs)
         p = ntot + diag_cov
         thetamaxes = []
-        thetamax = -p / 2.0 * (1 - sign(p) * sqrt(1.0 - 4 * q / p**2))
+        # thetamax = -p / 2.0 * (1 - sign(p) * sqrt(1.0 - 4 * q / p**2))
+        thetamax = -p / 2.0 + sign(p) * sqrt( p**2/4 - q)
         thetamaxes.append(thetamax)
         ndims = len(p)
 
@@ -639,7 +645,8 @@ class LikelihoodComputer:
                         dp = np.abs(0.3 * p[i]) * np.sign(dp)
                     q[i] += dq
                     p[i] += dp
-                thetamax = -p / 2.0 * (1 - sign(p) * sqrt(1.0 - 4 * q / p**2))
+                # thetamax = -p / 2.0 * (1 - sign(p) * sqrt(1.0 - 4 * q / p**2))
+                thetamax = -p / 2.0 + sign(p) * sqrt( p**2/4 - q)
             thetamaxes.append(thetamax)
             if len(thetamaxes) > 2:
                 d1 = distance(thetamaxes[-2], thetamax)

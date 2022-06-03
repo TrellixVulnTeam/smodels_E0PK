@@ -1061,10 +1061,7 @@ class UpperLimitComputer:
         else:
             sigma_mu = computer.getSigmaMu(mu_hat, theta_hat0)
 
-            nll0 = computer.likelihood(
-                mu_hat,
-                marginalize=marginalize,
-            )
+            nll0 = computer.likelihood( mu_hat, marginalize=marginalize, nll=True)
         # print ( f"SL nll0 {nll0:.3f} muhat {mu_hat:.3f} sigma_mu {sigma_mu:.3f} {signal_type} {sum(model.nsignal):.3f}" )
         if np.isinf(nll0) and not marginalize and not trylasttime:
             logger.warning(
@@ -1109,7 +1106,9 @@ class UpperLimitComputer:
             ## the function to find the zero of (ie CLs - alpha)
             # TODO convert rel_signals to signals
             nsig = getattr(model, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu)
-            mur = mu / sum(model.nsignal)
+            mur = mu
+            if signal_type == "signal_rel":
+                mur = mu / sum(model.nsignal)
             nll = computer.likelihood(mur, marginalize=marginalize, nll=True)
             nllA = compA.likelihood(mur, marginalize=marginalize, nll=True)
             return CLsfromNLL(nllA, nll0A, nll, nll0, return_type=return_type)
@@ -1134,16 +1133,13 @@ class UpperLimitComputer:
         :returns: upper limit on the signal strength multiplier mu
         """
         mu_hat, sigma_mu, clsRoot = self._ul_preprocess(
-            model, marginalize, toys, expected, trylasttime
+            model, marginalize, toys, expected, trylasttime,
+            signal_type = "nsignal"
         )
         if mu_hat == None:
             return None
         a, b = determineBrentBracket(mu_hat, sigma_mu, clsRoot)
         mu_lim = optimize.brentq(clsRoot, a, b, rtol=1e-03, xtol=1e-06)
-        # contrary to what it says, its an upper limit on yields,
-        # so translate into an UL on mu
-        mu_lim /= sum ( model.nsignal )
-        # print ( f"signal_rel: mu_hat {mu_hat} sigma_mu {sigma_mu} mu_lim {mu_lim}" )
         return mu_lim
 
     def computeCLs(

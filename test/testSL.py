@@ -193,7 +193,8 @@ class SLTest(unittest.TestCase):
         self.assertAlmostEqual ( lmax, lm )
         self.assertAlmostEqual ( lComp.muhat, 1. )
         self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
-        self.assertAlmostEqual ( ulProf, 2.537934980801342, 5 )
+        self.assertAlmostEqual ( ulProf, 2.4412989438119546, 5 )
+        # self.assertAlmostEqual ( ulProf, 2.537934980801342, 5 )
 
 
 if __name__ == "__main__":

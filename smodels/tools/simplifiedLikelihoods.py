@@ -485,9 +485,12 @@ class LikelihoodComputer:
 
     # Define integrand (gaussian_(bg+signal)*poisson(nobs)):
     # def prob(x0, x1 )
-    def probMV(self, nll, theta):
-        """probability, for nuicance parameters theta
-        :params nll: if True, compute negative log likelihood"""
+    def llhdOfTheta(self, theta, nll = True ):
+        """ likelihood for nuicance parameters theta, given signal strength
+            self.mu. notice, by default it returns nll
+        :param theta: nuisance parameters
+        :params nll: if True, compute negative log likelihood
+        """
         # theta = array ( thetaA )
         # ntot = self.model.backgrounds + self.nsig
         nsig = self.mu * self.model.nsignal
@@ -541,11 +544,6 @@ class LikelihoodComputer:
             raise Exception("ValueError %s, %s" % (e, self.model.V))
             # raise Exception("ValueError %s, %s" % ( e, self.model.totalCovariance(self.nsig) ))
             # raise Exception("ValueError %s, %s" % ( e, self.model.V ))
-
-    def nllOfNuisances(self, theta):
-        """probability, for nuicance parameters theta,
-        as a negative log likelihood."""
-        return self.probMV(True, theta)
 
     def dNLLdTheta(self, theta):
         """the derivative of nll as a function of the thetas.
@@ -687,7 +685,7 @@ class LikelihoodComputer:
         self.gammaln = special.gammaln(self.model.observed + 1)
         try:
             ret_c = optimize.fmin_ncg(
-                self.nllOfNuisances,
+                self.llhdOfTheta,
                 ini,
                 fprime=self.dNLLdTheta,
                 fhess=self.d2NLLdTheta2,
@@ -701,7 +699,7 @@ class LikelihoodComputer:
                 bounds = [(-10 * x, 10 * x) for x in self.model.observed]
             ini = ret_c
             ret_c = optimize.fmin_tnc(
-                self.nllOfNuisances, ret_c[0], fprime=self.dNLLdTheta, disp=0, bounds=bounds
+                self.llhdOfTheta, ret_c[0], fprime=self.dNLLdTheta, disp=0, bounds=bounds
             )
             # print ( "[findThetaHat] mu=%s bg=%s observed=%s V=%s, nsig=%s theta=%s, nll=%s" % ( self.nsig[0]/self.model.efficiencies[0], self.model.backgrounds, self.model.observed,self.model.covariance, self.nsig, ret_c[0], self.nllOfNuisances(ret_c[0]) ) )
             if ret_c[-1] not in [0, 1, 2]:
@@ -855,7 +853,7 @@ class LikelihoodComputer:
         theta_hat, _ = self.findThetaHat(mu)
         if self.debug_mode:
             self.theta_hat = theta_hat
-        ret = self.probMV(nll, theta_hat)
+        ret = self.llhdOfTheta( theta_hat, nll )
 
         return ret
 
@@ -1001,17 +999,17 @@ class UpperLimitComputer:
         xsec = sum(model.nsignal) / model.lumi
         return ul * xsec
 
-    def _ul_preprocess(
+    def getCLsRootFunc(
         self,
         model: Data,
         marginalize: Optional[bool] = False,
         toys: Optional[float] = None,
         expected: Optional[Union[bool, Text]] = False,
         trylasttime: Optional[bool] = False,
-        signal_type: Optional[Text] = "signal_rel",
     ) -> Tuple:
         """
-        Process the upper limit calculator
+        Obtain the function "CLs-alpha[0.05]" whose root defines the upper limit,
+        plus mu_hat and sigma_mu 
         :param model: statistical model
         :param marginalize: if true, marginalize nuisances, else profile them
         :param toys: specify number of toys. Use default is none
@@ -1019,16 +1017,8 @@ class UpperLimitComputer:
                           true: compute a priori expected, "posteriori":
                           compute a posteriori expected
         :param trylasttime: if True, then dont try extra
-        :param signal_type: signal_type will allow both SModelS and MadAnalysis interface
-                            to use this function simultaneously. For signal_rel upper limit
-                            is calculated for normalised signal events for nsignals upper limit
-                            is calculated for number of signal events.
-        :return: mu_hat, sigma_mu, root_func
+        :return: mu_hat, sigma_mu, CLs-alpha
         """
-        assert signal_type in [
-            "signal_rel",
-            "nsignal",
-        ], f"Signal type can only be `signal_rel` or `nsignal`. `{signal_type}` is given."
         # if expected:
         #    marginalize = True
         if model.zeroSignal():
@@ -1048,20 +1038,10 @@ class UpperLimitComputer:
                 model.observed[i] = float(d)
         computer = LikelihoodComputer(model, toys)
         mu_hat = computer.findMuHat( allowNegativeSignals=False, extended_output=False)
-        #if signal_type == "signal_rel":
-        #    mu_hat = mu_hat * sum(model.nsignal)
         theta_hat0, _ = computer.findThetaHat(0 * model.nsignal )
-        if signal_type == "signal_rel":
-            sigma_mu = computer.getSigmaMu(mu_hat/sum(model.nsignal), theta_hat0)
-            sigma_mu = sigma_mu * sum(model.nsignal)
-            # TODO convert rel_signals to signals
-            nll0 = computer.likelihood( mu = mu_hat,
-                marginalize=marginalize,
-                nll=True )
-        else:
-            sigma_mu = computer.getSigmaMu(mu_hat, theta_hat0)
+        sigma_mu = computer.getSigmaMu(mu_hat, theta_hat0)
 
-            nll0 = computer.likelihood( mu_hat, marginalize=marginalize, nll=True)
+        nll0 = computer.likelihood( mu_hat, marginalize=marginalize, nll=True)
         # print ( f"SL nll0 {nll0:.3f} muhat {mu_hat:.3f} sigma_mu {sigma_mu:.3f} {signal_type} {sum(model.nsignal):.3f}" )
         if np.isinf(nll0) and not marginalize and not trylasttime:
             logger.warning(
@@ -1082,16 +1062,8 @@ class UpperLimitComputer:
         compA = LikelihoodComputer(aModel, toys)
         ## compute
         mu_hatA = compA.findMuHat()
-        if signal_type == "signal_rel":
-            mu_hatA = mu_hatA * sum ( aModel.nsignal)
         # TODO convert rel_signals to signals
         nll0A = compA.likelihood( mu=mu_hatA, marginalize=marginalize, nll=True)
-        #nll1A = compA.likelihoodOfNSig(
-        #    getattr(aModel, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu_hatA),
-        #    marginalize=marginalize,
-        #    nll=True,
-        #)
-        #print ( f"SL nll0A {nll0A:.3f} mu_hatA {mu_hatA:.3f} nll1A {nll1A:.3f}" )
         # return 1.
 
         def clsRoot(mu: float, return_type: Text = "CLs-alpha") -> float:
@@ -1103,14 +1075,8 @@ class UpperLimitComputer:
                         1-CLs: returns 1-CLs value
                         CLs: returns CLs value
             """
-            ## the function to find the zero of (ie CLs - alpha)
-            # TODO convert rel_signals to signals
-            nsig = getattr(model, "rel_signals" if signal_type == "signal_rel" else "nsignals")(mu)
-            mur = mu
-            if signal_type == "signal_rel":
-                mur = mu / sum(model.nsignal)
-            nll = computer.likelihood(mur, marginalize=marginalize, nll=True)
-            nllA = compA.likelihood(mur, marginalize=marginalize, nll=True)
+            nll = computer.likelihood(mu, marginalize=marginalize, nll=True)
+            nllA = compA.likelihood(mu, marginalize=marginalize, nll=True)
             return CLsfromNLL(nllA, nll0A, nll, nll0, return_type=return_type)
 
         return mu_hat, sigma_mu, clsRoot
@@ -1132,9 +1098,8 @@ class UpperLimitComputer:
         :params trylasttime: if True, then dont try extra
         :returns: upper limit on the signal strength multiplier mu
         """
-        mu_hat, sigma_mu, clsRoot = self._ul_preprocess(
-            model, marginalize, toys, expected, trylasttime,
-            signal_type = "nsignal"
+        mu_hat, sigma_mu, clsRoot = self.getCLsRootFunc(
+            model, marginalize, toys, expected, trylasttime
         )
         if mu_hat == None:
             return None
@@ -1161,11 +1126,11 @@ class UpperLimitComputer:
                           compute a posteriori expected
         :param trylasttime: if True, then dont try extra
         :param return_type: (Text) can be "CLs-alpha", "1-CLs", "CLs"
-                        CLs-alpha: returns CLs - 0.05
+                        CLs-alpha: returns CLs - 0.05 (alpha)
                         1-CLs: returns 1-CLs value
                         CLs: returns CLs value
         """
-        _, _, clsRoot = self._ul_preprocess(model, marginalize, toys, expected, trylasttime)
+        _, _, clsRoot = self.getCLsRootFunc(model, marginalize, toys, expected, trylasttime )
         ret = clsRoot(1.0, return_type=return_type)
         # its not an uppser limit on mu, its on nsig
         return ret

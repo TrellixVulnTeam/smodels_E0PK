@@ -339,23 +339,33 @@ class LikelihoodComputer:
         values for lower and upper"""
         mu_c = self.model.observed - self.model.backgrounds - theta_hat
         mu_r, wmu_r = [], []
-        n_pred = mu * self.model.nsignal + self.model.backgrounds + theta_hat
-        obs = self.model.observed
-        for i, s in enumerate(n_pred):
-            if s == 0.0:
-                n_pred[i] = 1e-6
-        hessian = self.model.observed * self.model.nsignal**2 / n_pred**2
+        hessian = self.d2NLLdMu2 ( mu, theta_hat )
         wtot = 0.0
         for s in zip(mu_c, self.model.nsignal, hessian):
             if s[1] > 1e-10:
-                w = 1.0
+                w = 1. # 1e-5
                 if s[2] > 0.0:
                     w = s[2]
                 wtot += w
-                mu_r.append(s[0] / s[1])
-                wmu_r.append(w * s[0] / s[1])
+                r = s[0] / s[1]
+                mu_r.append( r )
+                wmu_r.append(w * r )
         ret = min(mu_r), sum(wmu_r) / wtot, max(mu_r)
         return ret
+
+    def d2NLLdMu2 ( self, mu, theta_hat ):
+        """ the hessian of the likelihood of mu, at mu,
+        which is the Fisher information
+        which is approximately the inverse of the covariance """
+        # nll=-nobs*ln(mu*s + b + theta) + ( mu*s + b + theta)
+        # d nll / d mu = - nobs * s / ( mu*s + b + theta) + s
+        # d2nll / dmu2 = nobs * s**2 / ( mu*s + b + theta )**2
+        n_pred = mu * self.model.nsignal + self.model.backgrounds + theta_hat
+        for i, s in enumerate(n_pred):
+            if s == 0.0: # if the denominator is 0, we blow it up
+                n_pred[i] = 1e-6
+        hessian = self.model.observed * self.model.nsignal**2 / n_pred**2
+        return hessian
 
     def findMuHat(
         self, allowNegativeSignals=False, extended_output=False, nll=False, marginalize=False
@@ -444,6 +454,7 @@ class LikelihoodComputer:
         if extended_output:
             sigma_mu = self.getSigmaMu(mu_hat, theta_hat)
             llhd = self.likelihood( mu_hat, marginalize=marginalize, nll=nll)
+            # print ( f"returning {allowNegativeSignals}: mu_hat {mu_hat}+-{sigma_mu} llhd {llhd}" )
             ret = {"muhat": mu_hat, "sigma_mu": sigma_mu, "lmax": llhd}
             return ret
         return mu_hat
@@ -1009,7 +1020,7 @@ class UpperLimitComputer:
     ) -> Tuple:
         """
         Obtain the function "CLs-alpha[0.05]" whose root defines the upper limit,
-        plus mu_hat and sigma_mu 
+        plus mu_hat and sigma_mu
         :param model: statistical model
         :param marginalize: if true, marginalize nuisances, else profile them
         :param toys: specify number of toys. Use default is none

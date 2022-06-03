@@ -585,8 +585,9 @@ class LikelihoodComputer:
 
     def getThetaHat(self, nobs, nb, mu, covb, max_iterations):
         """ Compute nuisance parameter theta that
-        maximizes our likelihood (poisson*gauss).
+            maximizes our likelihood (poisson*gauss) -- a first guess!
         :param mu: signal strength
+        :returns: theta_hat
         """
         nsig = mu * self.model.nsignal
         self.nsig = nsig

@@ -298,7 +298,6 @@ class LikelihoodComputer:
         the likelihood.
 
         :param mu: total number of signal events
-        :param signal_rel: array with the relative signal strengths for each dataset (signal region)
         :param theta_hat: array with nuisance parameters
 
         """
@@ -550,6 +549,7 @@ class LikelihoodComputer:
     def dNLLdTheta(self, theta):
         """the derivative of nll as a function of the thetas.
         Makes it easier to find the maximum likelihood."""
+        # print ( f"nsig {self.nsig} {self.model.nsignal}" )
         if self.model.isLinear():
             xtot = theta + self.model.backgrounds + self.nsig
             xtot[xtot <= 0.0] = 1e-30  ## turn zeroes to small values
@@ -583,9 +583,12 @@ class LikelihoodComputer:
         )
         return nllh_
 
-    def getThetaHat(self, nobs, nb, nsig, covb, max_iterations):
-        """Compute nuisance parameter theta that
-        maximizes our likelihood (poisson*gauss)."""
+    def getThetaHat(self, nobs, nb, mu, covb, max_iterations):
+        """ Compute nuisance parameter theta that
+        maximizes our likelihood (poisson*gauss).
+        :param mu: signal strength
+        """
+        nsig = mu * self.model.nsignal
         self.nsig = nsig
         sigma2 = covb + self.model.var_s(nsig)  ## np.diag ( (self.model.deltas)**2 )
         ## for now deal with variances only
@@ -652,7 +655,7 @@ class LikelihoodComputer:
         ## first step is to disregard the covariances and solve the
         ## quadratic equations
         ini = self.getThetaHat(
-            self.model.observed, self.model.backgrounds, nsig, self.model.covariance, 0
+            self.model.observed, self.model.backgrounds, mu, self.model.covariance, 0
         )
         self.cov_tot = self.model.V
         # if self.model.n == 1:
@@ -1129,6 +1132,7 @@ class UpperLimitComputer:
         # contrary to what it says, its an upper limit on yields,
         # so translate into an UL on mu
         mu_lim /= sum ( model.nsignal )
+        # print ( f"signal_rel: mu_hat {mu_hat} sigma_mu {sigma_mu} mu_lim {mu_lim}" )
         return mu_lim
 
     def computeCLs(

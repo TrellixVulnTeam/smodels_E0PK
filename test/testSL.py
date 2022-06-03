@@ -76,7 +76,7 @@ class SLTest(unittest.TestCase):
                   name="CMS-NOTE-2017-001 model",deltas_rel=0. )
         ulComp = UpperLimitComputer (ntoys=2000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
-        self.assertAlmostEqual( ulProf / 131.58637474312224, 1.0, 3 )
+        self.assertAlmostEqual( ulProf / 131.58637474312224, 1.0, 2 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize = True )
         self.assertAlmostEqual( ul / 132.75018479789006, 1., 1 )
 
@@ -110,7 +110,7 @@ class SLTest(unittest.TestCase):
         lmax = lComp.lmax ( )
         self.assertAlmostEqual( lmax, 2.1722054152e-09, 7 )
         self.assertAlmostEqual( lComp.muhat, 0. )
-        self.assertAlmostEqual( lComp.sigma_mu, 798.9887891147 )
+        self.assertAlmostEqual( lComp.sigma_mu, 798.9887891147, 2 )
         lmax = lComp.lmax ( allowNegativeSignals=True )
         self.assertAlmostEqual( lmax, 2.1708552631256182e-09, 12 )
         self.assertAlmostEqual( lComp.muhat, -71.523083468, 7 )
@@ -154,7 +154,7 @@ class SLTest(unittest.TestCase):
 
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
-        self.assertAlmostEqual( ulProf / 61.53473539725907, 1.0, 3 )
+        self.assertAlmostEqual( ulProf / 61.53473539725907, 1.0, 2 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize=True )
         self.assertAlmostEqual ( ul/65.20823799033607, 1., 1 )
 

@@ -291,16 +291,19 @@ class LikelihoodComputer:
         self.model = data
         self.toys = toys
 
-    def dNLLdMu(self, mu, theta_hat):
+    def dNLLdMu(self, mu, theta_hat ):
         """
         d (- ln L)/d mu, if L is the likelihood. The function
         whose root gives us muhat, i.e. the mu that maximizes
         the likelihood.
 
         :param mu: total number of signal events
-        :param theta_hat: array with nuisance parameters
+        :param theta_hat: array with nuisance parameters, if None then assume
+                          they got stored in self.theta_hat
 
         """
+        #if theta_hat == None:
+        #    theta_hat = self.theta_hat
         nsig = self.model.nsignal
         if not self.model.isLinear():
             logger.debug("implemented only for linear model")
@@ -334,12 +337,12 @@ class LikelihoodComputer:
             return ret
         return default
 
-    def findAvgr(self, mu, theta_hat ):
+    def findAvgr(self, theta_hat ):
         """from the difference observed - background, find got inital
         values for lower and upper"""
         mu_c = self.model.observed - self.model.backgrounds - theta_hat
         mu_r, wmu_r = [], []
-        hessian = self.d2NLLdMu2 ( mu, theta_hat )
+        hessian = self.d2NLLdMu2 ( 1., theta_hat )
         wtot = 0.0
         for s in zip(mu_c, self.model.nsignal, hessian):
             if s[1] > 1e-10:
@@ -412,7 +415,7 @@ class LikelihoodComputer:
             theta_hat, _ = self.findThetaHat(mu_hat)
             ctr += 1
             mu_hat_old = mu_hat
-            minr, avgr, maxr = self.findAvgr(mu_hat, theta_hat )
+            minr, avgr, maxr = self.findAvgr( theta_hat )
             # for i,s in enumerate ( signal_rel ):
             #    if abs(s) < 1e-19:
             #        mu_c[i]=0.
@@ -448,8 +451,7 @@ class LikelihoodComputer:
             if not allowNegativeSignals and mu_hat < 0.0:
                 mu_hat = 0.0
                 theta_hat, _ = self.findThetaHat(mu_hat)
-            if self.debug_mode:
-                self.theta_hat = theta_hat
+            self.theta_hat = theta_hat
 
         if extended_output:
             sigma_mu = self.getSigmaMu(mu_hat, theta_hat)
@@ -913,16 +915,21 @@ class LikelihoodComputer:
         marginalize=False,
     ):
         """currently not used but finding muhat via gradient descent"""
+        theta_hat, _ = self.findThetaHat( 0. )
+        minr, avgr, maxr = self.findAvgr( theta_hat )
+        theta_hat, _ = self.findThetaHat( avgr )
+        minr, avgr, maxr = self.findAvgr( theta_hat )
 
         def myllhd(mu):
             return self.likelihood(nll=True, marginalize=marginalize, mu = mu )
 
         import scipy.optimize
 
-        bounds = None
+        bounds = [(minr,maxr+1e-5)]
         if not allowNegativeSignals:
-            bounds = [(0, 1000.0)]
-        o = scipy.optimize.minimize(myllhd, 0.0, bounds=bounds)
+            bounds = [(0, maxr+1e-5)]
+        o = scipy.optimize.minimize( myllhd, x0=avgr, bounds=bounds )
+        #        jac = self.dNLLdMu )
         llhd = o.fun
         if not nll:
             llhd = np.exp(-o.fun)
@@ -933,8 +940,11 @@ class LikelihoodComputer:
             pass
         mu_hat = float(o.x[0])
         if extended_output:
-            sigma_mu = float(np.sqrt(hess[0][0]))
-            return mu_hat, sigma_mu, llhd
+            sigma_mu = self.getSigmaMu ( mu_hat, theta_hat )
+            llhd = self.likelihood( mu_hat, marginalize=marginalize, nll=nll)
+            # sigma_mu = float(np.sqrt(hess[0][0]))
+            ret = {"muhat": mu_hat, "sigma_mu": sigma_mu, "lmax": llhd }
+            return ret
         return mu_hat
 
     def chi2(self, marginalize=False):

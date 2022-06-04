@@ -326,7 +326,6 @@ class TheoryPredictionsCombiner(object):
         conditions = [tp.getmaxCondition() for tp in self.theoryPredictions]
         return max(conditions)
 
-    @singleDecorator
     def findMuHat(
         self,
         allowNegativeSignals: bool = False,

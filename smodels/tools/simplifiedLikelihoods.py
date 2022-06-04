@@ -940,23 +940,31 @@ class LikelihoodComputer:
             return ret
 
         import scipy.optimize
+        ominr = minr
         if minr > 0.:
             minr = .5 * minr
         if minr < 0.:
             minr = 2.*minr
+        if maxr > 0.:
+            maxr = 3.*maxr + 1e-5
+        if maxr < 0.:
+            maxr = .3 * maxr + 1e-5
 
-        bounds = [(minr,3.*maxr+1e-5)]
+        bounds = [(minr,maxr)]
         if not allowNegativeSignals:
-            bounds = [(0, max(2.*maxr+1e-5,1e-5))]
-        o = scipy.optimize.minimize( myllhd, x0=avgr, bounds=bounds )#, jac = self.dNLLdMu )
+            bounds = [(0, max(maxr,1e-5))]
+        assert bounds[0][1] > bounds[0][0], f"bounds are in wrong order: {bounds}"
+        o = scipy.optimize.minimize( myllhd, x0=avgr, bounds=bounds, jac = self.dNLLdMu )
         llhd = o.fun
         if not nll:
             llhd = np.exp(-o.fun)
+        """
         hess = o.hess_inv
         try:
             hess = hess.todense()
         except Exception as e:
             pass
+        """
         mu_hat = float(o.x[0])
         if extended_output:
             sigma_mu = self.getSigmaMu ( mu_hat, theta_hat )

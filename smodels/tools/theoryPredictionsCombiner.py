@@ -326,6 +326,7 @@ class TheoryPredictionsCombiner(object):
         conditions = [tp.getmaxCondition() for tp in self.theoryPredictions]
         return max(conditions)
 
+    @singleDecorator
     def findMuHat(
         self,
         allowNegativeSignals: bool = False,
@@ -337,10 +338,13 @@ class TheoryPredictionsCombiner(object):
         :param allowNegativeSignals: if true, then also allow for negative values
         :param expected: if true, compute expected prior (=lsm), if "posteriori"
                          compute posteriori expected
-        :param extended_output: if true, return also sigma_mu, the estimate of the error of mu_hat,
-                                and lmax, the likelihood at mu_hat
+        :param extended_output: if true, return also sigma_mu, the estimate of the 
+                         error of mu_hat, and lmax, the likelihood at mu_hat
         :param nll: if true, return negative log max likelihood instead of lmax
-        :returns: mu_hat, i.e. the maximum likelihood estimate of mu
+        :returns: mu_hat, i.e. the maximum likelihood estimate of mu, if extended 
+                  output is requested, it returns a dictionary with mu_hat, 
+                  sigma_mu -- the standard deviation around mu_hat, and lmax, 
+                  i.e. the likelihood at mu_hat
         """
         import scipy.optimize
 
@@ -356,6 +360,13 @@ class TheoryPredictionsCombiner(object):
                 w = 1.0 / sigma_mu**2
                 weighted.append(w * muhat)
                 totweight += w
+        # for a single theory prediction, we return just that
+        if len(muhats)==1:
+            if extended_output:
+                retllh = self.theoryPredictions[0].likelihood ( muhat, nll = nll, expected = expected )
+                return {"muhat": muhat, "sigma_mu": sigma_mu, "lmax": retllh}
+            return mu_hat
+            
         if len(muhats) == 0:
             logger.error(f"asked to compute muhat for combination, but no individual values")
             if extended_output:

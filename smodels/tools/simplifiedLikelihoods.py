@@ -371,21 +371,20 @@ class LikelihoodComputer:
         return hessian
 
     def findMuHat(
+    #def findMuHatViaBracketing(
         self, allowNegativeSignals=False, extended_output=False, nll=False, marginalize=False
     ):
         """
-        Find the most likely signal strength mu
+        Find the most likely signal strength mu via a brent bracketing technique
         given the relative signal strengths in each dataset (signal region).
 
-        :param nsig: array with relative signal strengths or signal yields
         :param allowNegativeSignals: if true, then also allow for negative values
         :param extended_output: if true, return also sigma_mu, the estimate of the error of mu_hat,
          and lmax, the likelihood at mu_hat
         :param nll: if true, return nll instead of lmax in the extended output
 
         :returns: mu_hat, i.e. the maximum likelihood estimate of mu, if extended output is
-        requested, it returns mu_hat, sigma_mu -- the standard deviation around mu_hat, and llhd,
-        the likelihood at mu_hat
+        requested, it returns a dictionary with mu_hat, sigma_mu -- the standard deviation around mu_hat, and lmax, i.e. the likelihood at mu_hat
         """
         if (self.model.backgrounds == self.model.observed).all():
             return self.extendedOutput(extended_output, 0.0)
@@ -907,14 +906,27 @@ class LikelihoodComputer:
         self.sigma_mu = sigma_mu
         return self.likelihood ( marginalize=marginalize, nll=nll, mu=muhat_ )
 
-    def findMuHatViaGradient(
+#def findMuHat(
+    def findMuHatViaGradientDescent(
         self,
         allowNegativeSignals=False,
         extended_output=False,
         nll=False,
         marginalize=False,
     ):
-        """currently not used but finding muhat via gradient descent"""
+        """
+        Find the most likely signal strength mu via gradient descent
+        given the relative signal strengths in each dataset (signal region).
+
+        :param allowNegativeSignals: if true, then also allow for negative values
+        :param extended_output: if true, return also sigma_mu, the estimate of the error of mu_hat,
+         and lmax, the likelihood at mu_hat
+        :param nll: if true, return nll instead of lmax in the extended output
+
+        :returns: mu_hat, i.e. the maximum likelihood estimate of mu, if extended output is
+        requested, it returns mu_hat, sigma_mu -- the standard deviation around mu_hat, and llhd,
+        the likelihood at mu_hat
+        """
         theta_hat, _ = self.findThetaHat( 0. )
         minr, avgr, maxr = self.findAvgr( theta_hat )
         theta_hat, _ = self.findThetaHat( avgr )

@@ -110,11 +110,14 @@ class SLTest(unittest.TestCase):
         lmax = lComp.lmax ( )
         self.assertAlmostEqual( lmax, 2.1722054152e-09, 7 )
         self.assertAlmostEqual( lComp.muhat, 0. )
-        self.assertAlmostEqual( lComp.sigma_mu, 798.9887891147, 2 )
+        # self.assertAlmostEqual( lComp.sigma_mu, 798.9887891147, 2 )
+        self.assertAlmostEqual( lComp.sigma_mu, 800.1380826235132, 2 )
         lmax = lComp.lmax ( allowNegativeSignals=True )
         self.assertAlmostEqual( lmax, 2.1708552631256182e-09, 12 )
-        self.assertAlmostEqual( lComp.muhat, -71.523083468, 7 )
-        self.assertAlmostEqual( lComp.sigma_mu, 795.0121298843319 )
+        #self.assertAlmostEqual( lComp.muhat, -71.523083468, 7 )
+        self.assertAlmostEqual( lComp.muhat, -72.63852360245156, 7 )
+        #self.assertAlmostEqual( lComp.sigma_mu, 795.0121298843319 )
+        self.assertAlmostEqual( lComp.sigma_mu, 796.122901385052, 4 )
 
     def xestModel1(self):
         """ take first SR of model-90 """
@@ -190,9 +193,10 @@ class SLTest(unittest.TestCase):
         ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
         pprint ( "ulProf", ulProf )
-        self.assertAlmostEqual ( lmax, lm )
-        self.assertAlmostEqual ( lComp.muhat, 1. )
-        self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
+        self.assertAlmostEqual ( lmax, lm, 3 )
+        self.assertAlmostEqual ( lComp.muhat, 1., 5 )
+        self.assertAlmostEqual ( lComp.sigma_mu, 0.655333438756686, 5 )
+        # self.assertAlmostEqual ( lComp.sigma_mu, 0.6123724356957945 )
         self.assertAlmostEqual ( ulProf, 2.4412989438119546, 5 )
         # self.assertAlmostEqual ( ulProf, 2.537934980801342, 5 )
 

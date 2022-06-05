@@ -370,8 +370,12 @@ class LikelihoodComputer:
         # d2nll / dmu2 = nobs * s**2 / ( mu*s + b + theta )**2
         n_pred = mu * self.model.nsignal + self.model.backgrounds + theta_hat
         for i, s in enumerate(n_pred):
-            if s == 0.0: # if the denominator is 0, we blow it up
-                n_pred[i] = 1e-6
+            if s == 0.0: # the denominator in the hessian is 0?
+                if (self.model.observed[i] * nsig[i]) == 0.0:
+                    #    logger.debug("zero denominator, but numerator also zero, so we set denom to 1.")
+                    n_pred[i] = 1.0
+                else:
+                    raise Exception( f"we have a zero value in the denominator at pos {i}, with a non-zero numerator. dont know how to handle." )
         obs = self.model.observed
         if sum(obs)==0:
             obs = self.model.backgrounds

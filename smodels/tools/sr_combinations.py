@@ -91,7 +91,7 @@ def getCombinedLikelihood(
         index = ulcomputer.getBestCombinationIndex()
         lbsm = ulcomputer.likelihood(mu=mu, workspace_index=index, expected=expected)
         return lbsm
-    lbsm = combinedSimplifiedLikelihood(
+    lbsm = getCombinedSimplifiedLikelihood(
         dataset, nsig, marginalize, deltas_rel, expected=expected, mu=mu
     )
     return lbsm

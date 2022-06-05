@@ -14,8 +14,8 @@ from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 from smodels.experiment.datasetObj import CombinedDataSet
 from smodels.tools.smodelsLogging import logger
 from smodels.tools.statistics import TruncatedGaussians
-from smodels.tools.combinations import computeCombinedStatistics
-from smodels.tools.combinations import getCombinedUpperLimitFor, computeCombinedLikelihood
+from smodels.tools.sr_combinations import computeCombinedStatistics, \
+            getCombinedUpperLimitFor, computeCombinedLikelihood
 import itertools
 import numpy as np
 

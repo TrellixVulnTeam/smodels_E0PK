@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 """
-.. module:: combinations
-   :synopsis: a module to contain the logic around combinations, be they
-              SL-based or pyhf-based.
+.. module:: sr_combinations
+   :synopsis: a module to contain the logic around combinations of signal regions 
+              within a single analysis, be they SL-based or pyhf-based.
 
 .. moduleauthor:: Wolfgang Waltenberger <wolfgang.waltenberger@gmail.com>
 

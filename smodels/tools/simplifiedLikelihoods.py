@@ -358,10 +358,13 @@ class LikelihoodComputer:
         ret = min(mu_r), sum(wmu_r) / wtot, max(mu_r)
         return ret
 
-    def d2NLLdMu2 ( self, mu, theta_hat ):
+    def d2NLLdMu2 ( self, mu, theta_hat, allowZeroHessian=True ):
         """ the hessian of the likelihood of mu, at mu,
         which is the Fisher information
-        which is approximately the inverse of the covariance """
+        which is approximately the inverse of the covariance
+        :param allowZeroHessian: if false and sum(observed)==0, then replace
+                                 observed with expected
+        """
         # nll=-nobs*ln(mu*s + b + theta) + ( mu*s + b + theta)
         # d nll / d mu = - nobs * s / ( mu*s + b + theta) + s
         # d2nll / dmu2 = nobs * s**2 / ( mu*s + b + theta )**2
@@ -369,7 +372,10 @@ class LikelihoodComputer:
         for i, s in enumerate(n_pred):
             if s == 0.0: # if the denominator is 0, we blow it up
                 n_pred[i] = 1e-6
-        hessian = self.model.observed * self.model.nsignal**2 / n_pred**2
+        obs = self.model.observed
+        if sum(obs)==0:
+            obs = self.model.backgrounds
+        hessian = obs * self.model.nsignal**2 / n_pred**2
         return hessian
 
     #def findMuHat(

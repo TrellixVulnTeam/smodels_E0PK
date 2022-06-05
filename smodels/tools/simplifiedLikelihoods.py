@@ -371,21 +371,24 @@ class LikelihoodComputer:
         n_pred = mu * self.model.nsignal + self.model.backgrounds + theta_hat
         for i, s in enumerate(n_pred):
             if s == 0.0: # the denominator in the hessian is 0?
-                if (self.model.observed[i] * nsig[i]) == 0.0:
+                if (self.model.observed[i] * self.model.nsignal[i]) == 0.0:
                     #    logger.debug("zero denominator, but numerator also zero, so we set denom to 1.")
                     n_pred[i] = 1.0
                 else:
                     raise Exception( f"we have a zero value in the denominator at pos {i}, with a non-zero numerator. dont know how to handle." )
         obs = self.model.observed
-        if sum(obs)==0:
+        if sum(obs)==0 and not allowZeroHessian:
             obs = self.model.backgrounds
         hessian = obs * self.model.nsignal**2 / n_pred**2
+        if sum(hessian) == 0.0 and not allowZeroHessian:
+            # if all observations are zero, we replace them by the expectations
+            if sum(self.model.observed) == 0:
+                hessian = self.model.nsignal**2 / n_pred
         return hessian
 
     #def findMuHat(
-    def findMuHatViaBracketing(
-        self, allowNegativeSignals=False, extended_output=False, nll=False, marginalize=False
-    ):
+    def findMuHatViaBracketing( self, allowNegativeSignals=False,
+        extended_output=False, nll=False, marginalize=False):
         """
         Find the most likely signal strength mu via a brent bracketing technique
         given the relative signal strengths in each dataset (signal region).
@@ -480,30 +483,14 @@ class LikelihoodComputer:
         if not self.model.isLinear():
             logger.debug("implemented only for linear model")
         # d^2 mu NLL / d mu^2 = sum_i [ n_obs^i * s_i**2 / n_pred^i**2 ]
-        nsig = self.model.nsignal
-
-        # Define relative signal strengths:
-        n_pred = mu * nsig + self.model.backgrounds + theta_hat
-
-        for ctr, d in enumerate(n_pred):
-            if d == 0.0:
-                if (self.model.observed[ctr] * nsig[ctr]) == 0.0:
-                    #    logger.debug("zero denominator, but numerator also zero, so we set denom to 1.")
-                    n_pred[ctr] = 1.0
-                else:
-                    raise Exception(
-                        "we have a zero value in the denominator at pos %d, with a non-zero numerator. dont know how to handle."
-                        % ctr
-                    )
-        hessian = self.model.observed * nsig**2 / n_pred**2
-
-        if type(hessian) in [array, ndarray, list]:
-            hessian = sum(hessian)
-        # the error is the square root of the inverse of the hessian
+        hessian = self.d2NLLdMu2 ( mu, theta_hat, allowZeroHessian = False )
+        hessian = sum ( hessian )
+        """
         if hessian == 0.0:
             # if all observations are zero, we replace them by the expectations
             if sum(self.model.observed) == 0:
                 hessian = sum(nsig**2 / n_pred)
+        """
         stderr = float(np.sqrt(1.0 / hessian))
         return stderr
 

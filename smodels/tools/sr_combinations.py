@@ -92,8 +92,7 @@ def getCombinedLikelihood(
         lbsm = ulcomputer.likelihood(mu=mu, workspace_index=index, expected=expected)
         return lbsm
     lbsm = getCombinedSimplifiedLikelihood(
-        dataset, nsig, marginalize, deltas_rel, expected=expected, mu=mu
-    )
+        dataset, nsig, marginalize, deltas_rel, expected=expected, mu=mu )
     return lbsm
 
 
@@ -119,29 +118,10 @@ def getCombinedStatistics(
         ulcomputer = _getPyhfComputer(dataset, [0.0] * len(nsig), False)
         lsm = ulcomputer.likelihood(mu=0.0, workspace_index=index, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
-    lbsm = getCombinedSimplifiedLikelihood(dataset, nsig, marginalize, deltas_rel, expected=expected)
-    cslm = getCombinedSimplifiedLmax(
-        dataset,
-        nsig,
-        marginalize,
-        deltas_rel,
-        expected=expected,
-        allowNegativeSignals=allowNegativeSignals,
+    cslm = getCombinedSimplifiedStatistics( dataset, nsig, marginalize,
+        deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals,
     )
-    lmax, muhat, sigma_mu = cslm["lmax"], cslm["muhat"], cslm["sigma_mu"]
-    lsm = getCombinedSimplifiedLikelihood(
-        dataset, [0.0] * len(nsig), marginalize, deltas_rel, expected=expected
-    )
-    if lsm > lmax:
-        logger.debug(f"lsm={lsm:.2g} > lmax({muhat:.2g})={lmax:.2g}: will correct")
-        lmax = lsm
-        muhat = 0.0
-    if lbsm > lmax:
-        logger.debug(f"lbsm={lbsm:.2g} > lmax({muhat:.2g})={lmax:.2g}: will correct")
-        lmax = lbsm
-        muhat = 1.0
-    return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
-
+    return cslm
 
 def _getPyhfComputer(dataset, nsig, normalize=True):
     """create the pyhf ul computer object
@@ -237,8 +217,7 @@ def getCombinedSimplifiedLikelihood(
     computer = LikelihoodComputer(Data(nobs, bg, cov, None, nsig, deltas_rel=deltas_rel))
     return computer.likelihood(1., marginalize=marginalize)
 
-
-def getCombinedSimplifiedLmax(
+def getCombinedSimplifiedStatistics(
     dataset, nsig, marginalize, deltas_rel, nll=False, expected=False, allowNegativeSignals=False
 ):
     """compute likelihood at maximum, for simplified likelihoods only"""
@@ -255,4 +234,17 @@ def getCombinedSimplifiedLmax(
         nsig = np.array(nsig)
     computer = LikelihoodComputer(Data(nobs, bg, cov, None, nsig, deltas_rel=deltas_rel))
     ret = computer.findMuHat(allowNegativeSignals=allowNegativeSignals, extended_output=True)
+    lbsm = computer.likelihood ( 1., marginalize = marginalize )
+    lsm = computer.likelihood ( 0., marginalize = marginalize )
+    lmax = ret["lmax"]
+    if lsm > lmax:
+        logger.debug(f"lsm={lsm:.2g} > lmax({muhat:.2g})={lmax:.2g}: will correct")
+        ret["lmax"] = lsm
+        ret["muhat"] = 0.0
+    if lbsm > lmax:
+        logger.debug(f"lbsm={lbsm:.2g} > lmax({muhat:.2g})={lmax:.2g}: will correct")
+        ret["lmax"] = lbsm
+        ret["muhat"] = 1.0
+    ret["lbsm"] = lbsm
+    ret["lsm"] = lsm
     return ret

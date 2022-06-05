@@ -155,11 +155,11 @@ class SLTest(unittest.TestCase):
         m = self.createModel(40)
         import time
 
-        ulComp = UpperLimitComputer(ntoys=10000, cl=.95 )
+        ulComp = UpperLimitComputer(ntoys=20000, cl=.95 )
         ulProf = ulComp.getUpperLimitOnMu ( m, marginalize=False )
         self.assertAlmostEqual( ulProf / 61.53473539725907, 1.0, 2 )
         ul = ulComp.getUpperLimitOnMu ( m, marginalize=True )
-        self.assertAlmostEqual ( ul/65.20823799033607, 1., 1 )
+        self.assertAlmostEqual ( ul/62.943195310667136, 1., 1 )
 
     def testTrivialModel ( self ):
         def pprint ( *args ):

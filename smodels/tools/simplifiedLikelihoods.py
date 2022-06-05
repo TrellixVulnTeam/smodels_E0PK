@@ -947,7 +947,7 @@ class LikelihoodComputer:
             minr = 2.*minr
         if maxr > 0.:
             maxr = 3.*maxr + 1e-5
-        if maxr < 0.:
+        if maxr <= 0.:
             maxr = .3 * maxr + 1e-5
 
         bounds = [(minr,maxr)]

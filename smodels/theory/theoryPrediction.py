@@ -14,8 +14,8 @@ from smodels.theory.exceptions import SModelSTheoryError as SModelSError
 from smodels.experiment.datasetObj import CombinedDataSet
 from smodels.tools.smodelsLogging import logger
 from smodels.tools.statistics import TruncatedGaussians
-from smodels.tools.sr_combinations import computeCombinedStatistics, \
-            getCombinedUpperLimitFor, computeCombinedLikelihood
+from smodels.tools.sr_combinations import getCombinedStatistics, \
+            getCombinedUpperLimitFor, getCombinedLikelihood
 import itertools
 import numpy as np
 
@@ -251,7 +251,7 @@ class TheoryPrediction(object):
                 srNsigDict[ds.getID()] if ds.getID() in srNsigDict else 0.0
                 for ds in self.dataset._datasets
             ]
-            llhd = computeCombinedLikelihood(
+            llhd = getCombinedLikelihood(
                 self.dataset, srNsigs, self.marginalize, self.deltas_rel, expected=expected, mu=mu
             )
         if self.dataType() == "efficiencyMap":
@@ -408,7 +408,7 @@ class TheoryPrediction(object):
                 for ds in self.dataset._datasets
             ]
             # srNsigs = [srNsigDict[dataID] if dataID in srNsigDict else 0. for dataID in self.dataset.globalInfo.datasetOrder]
-            s = computeCombinedStatistics(
+            s = getCombinedStatistics(
                 self.dataset,
                 srNsigs,
                 self.marginalize,

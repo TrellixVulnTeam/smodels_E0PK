@@ -74,7 +74,7 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         )
 
 
-def computeCombinedLikelihood(
+def getCombinedLikelihood(
     dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, mu=1.0
 ):
     """compute only lBSM
@@ -97,7 +97,7 @@ def computeCombinedLikelihood(
     return lbsm
 
 
-def computeCombinedStatistics(
+def getCombinedStatistics(
     dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, allowNegativeSignals=False
 ):
     """compute lBSM, lmax, and LSM in a single run
@@ -119,8 +119,8 @@ def computeCombinedStatistics(
         ulcomputer = _getPyhfComputer(dataset, [0.0] * len(nsig), False)
         lsm = ulcomputer.likelihood(mu=0.0, workspace_index=index, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
-    lbsm = combinedSimplifiedLikelihood(dataset, nsig, marginalize, deltas_rel, expected=expected)
-    cslm = combinedSimplifiedLmax(
+    lbsm = getCombinedSimplifiedLikelihood(dataset, nsig, marginalize, deltas_rel, expected=expected)
+    cslm = getCombinedSimplifiedLmax(
         dataset,
         nsig,
         marginalize,
@@ -129,7 +129,7 @@ def computeCombinedStatistics(
         allowNegativeSignals=allowNegativeSignals,
     )
     lmax, muhat, sigma_mu = cslm["lmax"], cslm["muhat"], cslm["sigma_mu"]
-    lsm = combinedSimplifiedLikelihood(
+    lsm = getCombinedSimplifiedLikelihood(
         dataset, [0.0] * len(nsig), marginalize, deltas_rel, expected=expected
     )
     if lsm > lmax:
@@ -202,7 +202,7 @@ def _getPyhfComputer(dataset, nsig, normalize=True):
     return ulcomputer
 
 
-def combinedSimplifiedLikelihood(
+def getCombinedSimplifiedLikelihood(
     dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, mu=1.0
 ):
     """
@@ -238,7 +238,7 @@ def combinedSimplifiedLikelihood(
     return computer.likelihood(1., marginalize=marginalize)
 
 
-def combinedSimplifiedLmax(
+def getCombinedSimplifiedLmax(
     dataset, nsig, marginalize, deltas_rel, nll=False, expected=False, allowNegativeSignals=False
 ):
     """compute likelihood at maximum, for simplified likelihoods only"""

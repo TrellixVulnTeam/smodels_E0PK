@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-.. module:: sr_combinations
+.. module:: srCombinations
    :synopsis: a module to contain the logic around combinations of signal regions 
               within a single analysis, be they SL-based or pyhf-based.
 
@@ -95,16 +95,9 @@ def getCombinedLikelihood(
         dataset, nsig, marginalize, deltas_rel, expected=expected, mu=mu )
     return lbsm
 
-
-def getCombinedStatistics(
-    dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, allowNegativeSignals=False
+def getCombinedPyhfStatistics(
+    dataset, nsig, marginalize, deltas_rel, nll=False, expected=False, allowNegativeSignals=False
 ):
-    """compute lBSM, lmax, and LSM in a single run
-    :param nsig: predicted signal (list)
-    :param deltas_rel: relative uncertainty in signal (float). Default value is 20%.
-    :param expected: compute expected values, not observed
-    """
-    if dataset.type == "pyhf":
         # Getting the path to the json files
         # Loading the jsonFiles
         ulcomputer = _getPyhfComputer(dataset, nsig, False)
@@ -118,6 +111,18 @@ def getCombinedStatistics(
         ulcomputer = _getPyhfComputer(dataset, [0.0] * len(nsig), False)
         lsm = ulcomputer.likelihood(mu=0.0, workspace_index=index, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
+
+def getCombinedStatistics(
+    dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, allowNegativeSignals=False
+):
+    """compute lBSM, lmax, and LSM in a single run
+    :param nsig: predicted signal (list)
+    :param deltas_rel: relative uncertainty in signal (float). Default value is 20%.
+    :param expected: compute expected values, not observed
+    """
+    if dataset.type == "pyhf":
+        return getCombinedPyhfStatistics ( dataset, nsig, marginalize, deltas_rel,
+            deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals)
     cslm = getCombinedSimplifiedStatistics( dataset, nsig, marginalize,
         deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals,
     )

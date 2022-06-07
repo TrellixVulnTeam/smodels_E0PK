@@ -447,12 +447,12 @@ class TheoryPredictionsCombiner(object):
 
         return mu_hat
 
-    def _ul_preprocess(self, expected: bool = False) -> Tuple[float, float, Callable]:
+    def getCLsRootFunc(self, expected: bool = False) -> Tuple[float, float, Callable]:
         """
-        preprocess upper limit computation
+        Obtain the function "CLs-alpha[0.05]" whose root defines the upper limit,
+        plus mu_hat and sigma_mu
         :param expected: if True, compute expected likelihood, else observed
         """
-        # @JACK: this needs to be fixed. Is this UL refers to UL on mu?
         # if "UL" in self.cachedObjs[expected]:
         #     return self.cachedObjs[expected]["UL"]
         fmh = self.findMuHat(expected=expected, allowNegativeSignals=True, extended_output=True)
@@ -484,7 +484,7 @@ class TheoryPredictionsCombiner(object):
         :param expected: if True, compute expected likelihood, else observed
         :returns: upper limit on signal strength multiplier mu
         """
-        mu_hat, sigma_mu, clsRoot = self._ul_preprocess(expected=expected)
+        mu_hat, sigma_mu, clsRoot = self.getCLsRootFunc(expected=expected)
 
         a, b = determineBrentBracket(mu_hat, sigma_mu, clsRoot)
         mu_lim = optimize.brentq(clsRoot, a, b, rtol=1e-03, xtol=1e-06)
@@ -501,6 +501,6 @@ class TheoryPredictionsCombiner(object):
                         CLs: returns CLs value
         """
         assert return_type in ["CLs-alpha", "1-CLs", "CLs"], f"Unknown return type: {return_type}."
-        _, _, clsRoot = self._ul_preprocess(expected=expected)
+        _, _, clsRoot = self.getCLsRootFunc(expected=expected)
 
         return clsRoot(1.0, return_type=return_type)

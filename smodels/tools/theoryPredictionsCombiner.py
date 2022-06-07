@@ -122,7 +122,8 @@ class TheoryPredictionsCombiner(object):
         """
         Return a string with the IDs of all the datasets used in the combination.
         """
-        ret = ",".join([tp.dataset.getID() for tp in self.theoryPredictions])
+        ids = [str(tp.dataset.getID()) for tp in self.theoryPredictions]
+        ret = ",".join(ids)
 
         return ret
 

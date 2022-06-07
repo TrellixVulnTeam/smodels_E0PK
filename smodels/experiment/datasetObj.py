@@ -492,7 +492,7 @@ class DataSet(object):
 
     def getSRUpperLimit(self, alpha=0.05, expected=False, compute=False, deltas_rel=0.2):
         """
-        Computes the 95% upper limit on the signal*efficiency for a given dataset (signal region).
+        Computes the 95% upper limit on the signal xsec *efficiency for a given dataset (signal region).
         Only to be used for efficiency map type results.
 
         :param alpha: Can be used to change the C.L. value. The default value is 0.05 (= 95% C.L.)
@@ -530,14 +530,11 @@ class DataSet(object):
         Nexp = self.dataInfo.expectedBG  # Number of expected BG events
         bgError = self.dataInfo.bgError  # error on BG
 
-        m = Data(Nobs, Nexp, bgError**2, deltas_rel=deltas_rel)
+        m = Data( Nobs, Nexp, bgError**2, deltas_rel=deltas_rel,
+                  lumi = self.getLumi() )
         computer = UpperLimitComputer(cl=1.0 - alpha)
-        maxSignalXsec = computer.ulSigma(m)
-        if maxSignalXsec != None:
-            maxSignalXsec = maxSignalXsec / self.getLumi()
-
-        return maxSignalXsec
-
+        ulSigmaEff = computer.getUpperLimitOnSigmaTimesEff ( m )
+        return ulSigmaEff # FIXME it seems like this was a limit on yields before
 
 class CombinedDataSet(object):
     """

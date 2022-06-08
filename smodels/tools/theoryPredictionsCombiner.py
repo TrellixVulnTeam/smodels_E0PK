@@ -362,10 +362,12 @@ class TheoryPredictionsCombiner(object):
                 totweight += w
         # for a single theory prediction, we return just that
         if len(muhats)==1:
+            if muhat < 0. and not allowNegativeSignals:
+                muhat = 0.
             if extended_output:
                 retllh = self.theoryPredictions[0].likelihood ( muhat, nll = nll, expected = expected )
                 return {"muhat": muhat, "sigma_mu": sigma_mu, "lmax": retllh}
-            return mu_hat
+            return muhat
             
         if len(muhats) == 0:
             logger.error(f"asked to compute muhat for combination, but no individual values")
@@ -455,13 +457,15 @@ class TheoryPredictionsCombiner(object):
         """
         # if "UL" in self.cachedObjs[expected]:
         #     return self.cachedObjs[expected]["UL"]
-        fmh = self.findMuHat(expected=expected, allowNegativeSignals=True, extended_output=True)
+        fmh = self.findMuHat(expected=expected, allowNegativeSignals=False, 
+                             extended_output=True)
         mu_hat, sigma_mu, lmax = fmh["muhat"], fmh["sigma_mu"], fmh["lmax"]
         mu_hat = mu_hat if mu_hat is not None else 0.0
         nll0 = self.likelihood(mu_hat, expected=expected, nll=True)
         # a posteriori expected is needed here
         # mu_hat is mu_hat for signal_rel
-        fmh = self.findMuHat(expected="posteriori", nll=True, extended_output=True)
+        fmh = self.findMuHat(expected="posteriori", allowNegativeSignals=False, 
+                             nll=True, extended_output=True)
         mu_hatA, _, nll0A = fmh["muhat"], fmh["sigma_mu"], fmh["lmax"]
 
         # logger.error ( f"COMB nll0A {nll0A:.3f} mu_hatA {mu_hatA:.3f}" )

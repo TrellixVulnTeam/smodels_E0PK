@@ -54,7 +54,7 @@ For help instructions:
 *./runSModelS.py -h*
 
 An example file on how to call the SModelS libraries from your own
-Python code can be found in [Example.py](Example.py).
+Python code can be found in `Example.py] <Example.py>`_.
 
 Detailed explanations on how to use SModelS, including explanations of the
 output, can be found in the section `Using SModelS <http://smodels.readthedocs.io/en/latest/RunningSModelS.html>`_ of the `SModelS online manual`_.

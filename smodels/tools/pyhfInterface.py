@@ -547,9 +547,10 @@ class PyhfUpperLimitComputer:
         """if doIt, then compute likelihood from nll,
         else return nll"""
         if twice_nll == None:
-            if doIt:
-                return 0.0
-            return 9000.0
+            return None
+            #if doIt:
+            #    return 0.0
+            #return 9000.0
         if doIt:
             return np.exp(-twice_nll / 2.0)
         return twice_nll / 2.0

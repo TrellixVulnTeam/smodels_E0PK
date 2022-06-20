@@ -265,8 +265,9 @@ def determineBrentBracket(mu_hat, sigma_mu, rootfinder):
         i += 1
         a -= (i**2.0) * sigma_mu
         if i > ntrials or a < -10000.0:
-            for a in [0.0, 1.0, -1.0, 3.0, -3.0, 10.0, -10.0, 0.1, -0.1, 0.01, -0.01]:
-                if rootfinder(a) > 0.0:
+            for a in [0.0, 1.0, -1.0, 3.0, -3.0, 10.0, -10.0, 0.1, -0.1, 0.01, -0.01, .001, -.001, 100., -100., .0001, -.0001 ]:
+                r = rootfinder(a)
+                if r > 0.0:
                     foundExtra = True
                     break
             if not foundExtra:
@@ -286,7 +287,7 @@ def determineBrentBracket(mu_hat, sigma_mu, rootfinder):
         b += (i**2.0) * sigma_mu
         closestr, closest = float("inf"), None
         if i > ntrials:
-            for b in [1.0, 0.0, 3.0, -1.0, 10.0, -3.0, 0.1, -0.1, -10.0, 100.0, -100.0, 1000.0]:
+            for b in [1.0, 0.0, 3.0, -1.0, 10.0, -3.0, 0.1, -0.1, -10.0, 100.0, -100.0, 1000.0, .01, -.01, .001, -.001 ]:
                 root = rootfinder(b)
                 if root < 0.0:
                     foundExtra = True

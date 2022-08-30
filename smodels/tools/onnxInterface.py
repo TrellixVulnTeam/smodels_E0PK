@@ -63,7 +63,8 @@ class OnnxData:
     def destroy ( self ):
         if self.fname != None:
             import os
-            os.unlink ( self.fname )
+            if os.path.exists ( self.fname ):
+                os.unlink ( self.fname )
 
     def totalYield ( self ):
         """ the total yield in all signal regions """

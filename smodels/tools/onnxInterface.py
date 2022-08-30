@@ -13,6 +13,7 @@ try:
     import onnxruntime
 except ModuleNotFoundError:
     print("[SModelS:onnxInterface] onnxruntime import failed. Is the module installed?")
+    import sys
     sys.exit(-1)
 
 ver = onnxruntime.__version__.split(".")

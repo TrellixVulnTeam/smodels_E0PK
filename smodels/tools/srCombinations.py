@@ -59,7 +59,8 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         if all([s == 0 for s in nsig]):
             logger.warning("All signals are empty")
             return None
-        ulcomputer = _getPyhfComputer(dataset, nsig)
+        from smodels.tools.pyhfInterface import getPyhfComputer
+        ulcomputer = getPyhfComputer(dataset, nsig)
         ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
         return ret
@@ -68,7 +69,8 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         if all([s == 0 for s in nsig]):
             logger.warning("All signals are empty")
             return None
-        ulcomputer = _getOnnxComputer(dataset, nsig)
+        from smodels.tools.onnxInterface import getOnnxComputer
+        ulcomputer = getOnnxComputer(dataset, nsig)
         ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
         return ret
@@ -96,7 +98,8 @@ def getCombinedLikelihood(
     if dataset.type == "pyhf":
         # Getting the path to the json files
         # Loading the jsonFiles
-        ulcomputer = _getPyhfComputer(dataset, nsig, False)
+        from smodels.tools.pyhfInterface import getPyhfComputer
+        ulcomputer = getPyhfComputer(dataset, nsig, False)
         index = ulcomputer.getBestCombinationIndex()
         lbsm = ulcomputer.likelihood(mu=mu, workspace_index=index, expected=expected)
         return lbsm
@@ -109,7 +112,8 @@ def getCombinedPyhfStatistics(
 ):
         # Getting the path to the json files
         # Loading the jsonFiles
-        ulcomputer = _getPyhfComputer(dataset, nsig, False)
+        from smodels.tools.pyhfInterface import getPyhfComputer
+        ulcomputer = getPyhfComputer(dataset, nsig, False)
         index = ulcomputer.getBestCombinationIndex()
         lbsm = ulcomputer.likelihood(mu=1.0, workspace_index=index, expected=expected)
         lmax = ulcomputer.lmax(
@@ -121,7 +125,8 @@ def getCombinedPyhfStatistics(
         except AttributeError:
             pass
         sigma_mu = ulcomputer.sigma_mu
-        ulcomputer = _getPyhfComputer(dataset, [0.0] * len(nsig), False)
+        from smodels.tools.pyhfInterface import getPyhfComputer
+        ulcomputer = getPyhfComputer(dataset, [0.0] * len(nsig), False)
         lsm = ulcomputer.likelihood(mu=0.0, workspace_index=index, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
 
@@ -130,7 +135,8 @@ def getCombinedOnnxStatistics(
 ):
         # Getting the path to the json files
         # Loading the jsonFiles
-        ulcomputer = _getOnnxComputer(dataset, nsig)
+        from smodels.tools.onnxInterface import getOnnxComputer
+        ulcomputer = getOnnxComputer(dataset, nsig)
         lbsm = ulcomputer.likelihood(mu=1.0, expected=expected)
         lmax = ulcomputer.lmax( expected=expected, allowNegativeSignals=allowNegativeSignals
         )
@@ -140,7 +146,8 @@ def getCombinedOnnxStatistics(
         except AttributeError:
             pass
         sigma_mu = ulcomputer.sigma_mu
-        ulcomputer = _getOnnxComputer(dataset, [0.0] * len(nsig), False)
+        from smodels.tools.onnxInterface import getOnnxComputer
+        ulcomputer = getOnnxComputer(dataset, [0.0] * len(nsig), False)
         lsm = ulcomputer.likelihood(mu=0.0, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
 
@@ -163,76 +170,6 @@ def getCombinedStatistics(
         deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals,
     )
     return cslm
-
-def _getOnnxComputer(dataset, nsig ):
-    """create the onnx ul computer object
-    :returns: onnx upper limit computer, and combinations of signal regions
-    """
-    from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
-
-    data = OnnxData(nsig, dataset.globalInfo.onnxFile )
-    ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
-    return ulcomputer
-
-
-def _getPyhfComputer(dataset, nsig, normalize=True):
-    """create the pyhf ul computer object
-    :param normalize: if true, normalize nsig
-    :returns: pyhf upper limit computer, and combinations of signal regions
-    """
-    # Getting the path to the json files
-    jsonFiles = [js for js in dataset.globalInfo.jsonFiles]
-    jsons = dataset.globalInfo.jsons.copy()
-    datasets = [ds.getID() for ds in dataset._datasets]
-    total = sum(nsig)
-    if total == 0.0:  # all signals zero? can divide by anything!
-        total = 1.0
-    if normalize:
-        nsig = [
-            s / total for s in nsig
-        ]  # Normalising signals to get an upper limit on the events count
-    # Filtering the json files by looking at the available datasets
-    for jsName in dataset.globalInfo.jsonFiles:
-        if all([ds not in dataset.globalInfo.jsonFiles[jsName] for ds in datasets]):
-            # No datasets found for this json combination
-            jsIndex = jsonFiles.index(jsName)
-            jsonFiles.pop(jsIndex)
-            jsons.pop(jsIndex)
-            continue
-        if not all([ds in datasets for ds in dataset.globalInfo.jsonFiles[jsName]]):
-            # Some SRs are missing for this json combination
-            logger.error("Wrong json definition in globalInfo.jsonFiles for json : %s" % jsName)
-    logger.debug("list of datasets: {}".format(datasets))
-    logger.debug("jsonFiles after filtering: {}".format(jsonFiles))
-    # Constructing the list of signals with subsignals matching each json
-    nsignals = list()
-    for jsName in jsonFiles:
-        subSig = list()
-        for srName in dataset.globalInfo.jsonFiles[jsName]:
-            try:
-                index = datasets.index(srName)
-            except ValueError:
-                line = (
-                    f"{srName} signal region provided in globalInfo is not in the list of datasets"
-                )
-                raise ValueError(line)
-            sig = nsig[index]
-            subSig.append(sig)
-        nsignals.append(subSig)
-    # Loading the jsonFiles, unless we already have them (because we pickled)
-    from smodels.tools.pyhfInterface import PyhfData, PyhfUpperLimitComputer
-
-    data = PyhfData(nsignals, jsons, jsonFiles)
-    if data.errorFlag:
-        return None
-    if hasattr(dataset.globalInfo, "includeCRs"):
-        includeCRs = dataset.globalInfo.includeCRs
-    else:
-        includeCRs = False
-    ulcomputer = PyhfUpperLimitComputer(data, includeCRs=includeCRs,
-                                        lumi=dataset.getLumi() )
-    return ulcomputer
-
 
 def getCombinedSimplifiedLikelihood(
     dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, mu=1.0

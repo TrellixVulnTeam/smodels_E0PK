@@ -23,6 +23,16 @@ if ver[1] == "0":
 import numpy as np
 from smodels.tools.smodelsLogging import logger
 
+def getOnnxComputer(dataset, nsig ):
+    """create the onnx ul computer object
+    :returns: onnx upper limit computer, and combinations of signal regions
+    """
+    from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
+
+    data = OnnxData(nsig, dataset.globalInfo.onnxFile )
+    ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
+    return ulcomputer
+
 class OnnxData:
     """
     Holds data for use in onnx

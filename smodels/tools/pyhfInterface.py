@@ -100,6 +100,65 @@ def getLogger():
 countWarning = {"llhdszero": 0}
 # logger=getLogger()
 
+def getPyhfComputer(dataset, nsig, normalize=True):
+    """create the pyhf ul computer object
+    :param normalize: if true, normalize nsig
+    :returns: pyhf upper limit computer, and combinations of signal regions
+    """
+    # Getting the path to the json files
+    jsonFiles = [js for js in dataset.globalInfo.jsonFiles]
+    jsons = dataset.globalInfo.jsons.copy()
+    datasets = [ds.getID() for ds in dataset._datasets]
+    total = sum(nsig)
+    if total == 0.0:  # all signals zero? can divide by anything!
+        total = 1.0
+    if normalize:
+        nsig = [
+            s / total for s in nsig
+        ]  # Normalising signals to get an upper limit on the events count
+    # Filtering the json files by looking at the available datasets
+    for jsName in dataset.globalInfo.jsonFiles:
+        if all([ds not in dataset.globalInfo.jsonFiles[jsName] for ds in datasets]):
+            # No datasets found for this json combination
+            jsIndex = jsonFiles.index(jsName)
+            jsonFiles.pop(jsIndex)
+            jsons.pop(jsIndex)
+            continue
+        if not all([ds in datasets for ds in dataset.globalInfo.jsonFiles[jsName]]):
+            # Some SRs are missing for this json combination
+            logger.error("Wrong json definition in globalInfo.jsonFiles for json : %s" % jsName)
+    logger.debug("list of datasets: {}".format(datasets))
+    logger.debug("jsonFiles after filtering: {}".format(jsonFiles))
+    # Constructing the list of signals with subsignals matching each json
+    nsignals = list()
+    for jsName in jsonFiles:
+        subSig = list()
+        for srName in dataset.globalInfo.jsonFiles[jsName]:
+            try:
+                index = datasets.index(srName)
+            except ValueError:
+                line = (
+                    f"{srName} signal region provided in globalInfo is not in the list of datasets"
+                )
+                raise ValueError(line)
+            sig = nsig[index]
+            subSig.append(sig)
+        nsignals.append(subSig)
+    # Loading the jsonFiles, unless we already have them (because we pickled)
+    from smodels.tools.pyhfInterface import PyhfData, PyhfUpperLimitComputer
+
+    data = PyhfData(nsignals, jsons, jsonFiles)
+    if data.errorFlag:
+        return None
+    if hasattr(dataset.globalInfo, "includeCRs"):
+        includeCRs = dataset.globalInfo.includeCRs
+    else:
+        includeCRs = False
+    ulcomputer = PyhfUpperLimitComputer(data, includeCRs=includeCRs,
+                                        lumi=dataset.getLumi() )
+    return ulcomputer
+
+
 
 class PyhfData:
     """

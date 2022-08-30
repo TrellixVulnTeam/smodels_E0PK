@@ -54,16 +54,6 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         ret = computer.getUpperLimitOnSigmaTimesEff(d, marginalize=dataset._marginalize, expected=expected)
         logger.debug("SL upper limit : {}".format(ret))
         return ret
-    elif dataset.type == "pyhf":
-        logger.debug("Using pyhf")
-        if all([s == 0 for s in nsig]):
-            logger.warning("All signals are empty")
-            return None
-        from smodels.tools.pyhfInterface import getPyhfComputer
-        ulcomputer = getPyhfComputer(dataset, nsig)
-        ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
-        logger.debug("pyhf upper limit : {}".format(ret))
-        return ret
     elif dataset.type == "onnx":
         logger.debug("Using onnx")
         if all([s == 0 for s in nsig]):
@@ -71,6 +61,16 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
             return None
         from smodels.tools.onnxInterface import getOnnxComputer
         ulcomputer = getOnnxComputer(dataset, nsig)
+        ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
+        logger.debug("pyhf upper limit : {}".format(ret))
+        return ret
+    elif dataset.type == "pyhf":
+        logger.debug("Using pyhf")
+        if all([s == 0 for s in nsig]):
+            logger.warning("All signals are empty")
+            return None
+        from smodels.tools.pyhfInterface import getPyhfComputer
+        ulcomputer = getPyhfComputer(dataset, nsig)
         ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
         return ret

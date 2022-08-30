@@ -117,6 +117,20 @@ class TheoryPrediction(object):
                         srNsigDict[dataID] if dataID in srNsigDict else 0.0
                         for dataID in self.dataset.globalInfo.datasetOrder
                     ]
+                elif hasattr(self.dataset.globalInfo, "onnxFiles"):
+                    srNsigDict = dict(
+                        [
+                            [
+                                pred.dataset.getID(),
+                                (pred.xsection.value * pred.dataset.getLumi()).asNumber(),
+                            ]
+                            for pred in self.datasetPredictions
+                        ]
+                    )
+                    srNsigs = [
+                        srNsigDict[ds.getID()] if ds.getID() in srNsigDict else 0.0
+                        for ds in self.dataset._datasets
+                    ]
                 elif hasattr(self.dataset.globalInfo, "jsonFiles"):
                     srNsigDict = dict(
                         [
@@ -334,6 +348,7 @@ class TheoryPrediction(object):
         attributes (chi2 being phased out).
         :param expected: computed expected quantities, not observed
         """
+        print ( "here", self.dataType() )
         if not "lmax" in self.cachedObjs[expected]:
             self.cachedObjs[expected]["lmax"] = {}
             self.cachedObjs[expected]["muhat"] = {}
@@ -643,10 +658,9 @@ def _getCombinedResultFor(dataSetResults, expResult, marginalize=False):
 
     :return: TheoryPrediction object
     """
-
     if len(dataSetResults) == 1:
         return dataSetResults[0]
-    elif not expResult.hasCovarianceMatrix() and not expResult.hasJsonFile():
+    elif not expResult.hasCovarianceMatrix() and not expResult.hasJsonFile() and not expResult.hasOnnxFile():
         return None
 
     txnameList = []

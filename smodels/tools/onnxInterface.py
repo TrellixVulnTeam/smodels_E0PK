@@ -28,8 +28,15 @@ def getOnnxComputer(dataset, nsig ):
     :returns: onnx upper limit computer, and combinations of signal regions
     """
     from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
-
-    data = OnnxData(nsig, dataset.globalInfo.onnxFile )
+    keys = list ( dataset.globalInfo.onnxFiles.keys() )
+    if len(keys)>1:
+        logger.error ( "I have not yet implemented more than a single onnx file" )
+        import sys
+        sys.exit(-1)
+    # oxf = dataset.globalInfo.onnxFiles [ keys[0] ]
+    print ( "keys", dataset.globalInfo.onnxFiles )
+    import onnxruntime
+    data = OnnxData(nsig, dataset.globalInfo.onnx[0] )
     ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
     return ulcomputer
 

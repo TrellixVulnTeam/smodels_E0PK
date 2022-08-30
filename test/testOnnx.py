@@ -36,12 +36,15 @@ class OnnxTest(unittest.TestCase):
 
         db = Database ( "./database_onnx/" )
         expRes = db.getExpResults ( analysisIDs = [ "ATLAS-SUSY-2018-04" ],
-                                dataTypes = "efficiencyMap" )
+                                    dataTypes = "efficiencyMap" )
         filename = "./testFiles/slha_onnx/TStauStau.slha"
         model = Model(BSMList, SMList)
         model.updateParticles(filename)
         smstoplist = decomposer.decompose(model, sigmacut=0)
-        prediction = theoryPredictionsFor(expRes[0], smstoplist)[0]
+        predictions = theoryPredictionsFor(expRes[0], smstoplist, 
+                         useBestDataset = False, combinedResults = True)
+        # print ( "predictions", predictions )
+        prediction = predictions[0]
         pred_signal_strength = prediction.xsection.value
         prediction.computeStatistics()
         llhd = prediction.likelihood()

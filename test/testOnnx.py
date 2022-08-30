@@ -34,7 +34,7 @@ class OnnxTest(unittest.TestCase):
         from smodels.theory import decomposer
         from smodels.theory.theoryPrediction import theoryPredictionsFor
 
-        db = Database ( "./database_onnx/" )
+        db = Database ( "./database_onnx/", force_load = "txt" )
         expRes = db.getExpResults ( analysisIDs = [ "ATLAS-SUSY-2018-04" ],
                                     dataTypes = "efficiencyMap" )
         filename = "./testFiles/slha_onnx/TStauStau.slha"
@@ -49,9 +49,9 @@ class OnnxTest(unittest.TestCase):
         prediction.computeStatistics()
         llhd = prediction.likelihood()
         # for pyhf i get 3.5292233396179906e-44
-        self.assertAlmostEqual ( llhd, 0.0074667034648726646, 3 )
+        self.assertAlmostEqual ( llhd, 1.869864907903324e-22, 3 )
         nll = prediction.likelihood( nll = True )
-        self.assertAlmostEqual ( nll, 4.897301680470236, 3 )
+        self.assertAlmostEqual ( nll, 50.031005859375, 3 )
 
 if __name__ == "__main__":
     unittest.main()

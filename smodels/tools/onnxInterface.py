@@ -35,9 +35,13 @@ def getOnnxComputer(dataset, nsig ):
         import sys
         sys.exit(-1)
     # oxf = dataset.globalInfo.onnxFiles [ keys[0] ]
-    print ( "keys", dataset.globalInfo.onnxFiles )
+    fname = "/tmp/test.onnx"
+    with open ( fname, "wb" ) as f:
+        f.write ( dataset.globalInfo.onnx[0] )
+        f.close()
     import onnxruntime
-    data = OnnxData(nsig, dataset.globalInfo.onnx[0] )
+    oxsession = onnxruntime.InferenceSession( fname )
+    data = OnnxData(nsig, oxsession, fname )
     ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
     return ulcomputer
 
@@ -77,6 +81,7 @@ class OnnxUpperLimitComputer:
         """
         self.data = data
         self.lumi = lumi
+        self.sigma_mu = 1.
 
     def likelihood(self, mu=1.0, nll=False, expected=False):
         """
@@ -88,14 +93,14 @@ class OnnxUpperLimitComputer:
             expected
         """
         # FIXME implemented expectation values
-        inp = self.data.nsignals
+        inp = [ self.data.nsignals ]
         ort_outs = self.data.inputOnnx.run(None, { "dense_input": inp } )
         ret = float ( ort_outs[0][0][0] ) # nll
         if nll: # return nll
             return ret
         return self.exponentiateNLL ( ret, doIt=True )
 
-    def chi2(self, workspace_index=None):
+    def chi2(self):
         """
         Returns the chi square
         """
@@ -115,138 +120,21 @@ class OnnxUpperLimitComputer:
             return np.exp(-twice_nll / 2.0)
         return twice_nll / 2.0
 
-    def getSigmaMu(self, workspace):
+    def getSigmaMu(self ):
         """given a workspace, compute a rough estimate of sigma_mu,
         the uncertainty of mu_hat"""
-        obss, bgs, bgVars, nsig = {}, {}, {}, {}
-        channels = workspace.channels
-        for chdata in workspace["channels"]:
-            if not chdata["name"] in channels:
-                continue
-            bg = 0.0
-            var = 0.0
-            for sample in chdata["samples"]:
-                if sample["name"] == "Bkg":
-                    tbg = sample["data"][0]
-                    bg += tbg
-                    hi = sample["modifiers"][0]["data"]["hi_data"][0]
-                    lo = sample["modifiers"][0]["data"]["lo_data"][0]
-                    delta = max((hi - bg, bg - lo))
-                    var += delta**2
-                if sample["name"] == "bsm":
-                    ns = sample["data"][0]
-                    nsig[chdata["name"]] = ns
-            bgs[chdata["name"]] = bg
-            bgVars[chdata["name"]] = var
-        for chdata in workspace["observations"]:
-            if not chdata["name"] in channels:
-                continue
-            obss[chdata["name"]] = chdata["data"][0]
-        vars = []
-        for c in channels:
-            # poissonian error
-            if nsig[c]==0.:
-                nsig[c]=1e-5
-            poiss = abs(obss[c]-bgs[c]) / nsig[c]
-            gauss = bgVars[c] / nsig[c]**2
-            vars.append ( poiss + gauss )
-        var_mu = np.sum ( vars )
-        n = len ( obss )
-        # print ( f" sigma_mu from onnx uncorr {var_mu} {n} "  )
-        sigma_mu = float ( np.sqrt ( var_mu / (n**2) ) )
-        self.sigma_mu = sigma_mu
-        #import IPython
-        #IPython.embed()
-        #sys.exit()
+        return 1.
 
     def lmax(self, nll=False, expected=False, allowNegativeSignals=False):
         """
         Returns the negative log max likelihood
         :param nll: if true, return nll, not llhd
-        :param workspace_index: supply index of workspace to use. If None,
-            choose index of best combo
         :param expected: if False, compute expected values, if True,
             compute a priori expected, if "posteriori" compute posteriori
             expected
         :param allowNegativeSignals: if False, then negative nsigs are replaced with 0.
         """
-        # logger.error("expected flag needs to be heeded!!!")
-        logger.debug("Calling lmax")
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                "ignore",
-                "Values in x were outside bounds during a minimize step, clipping to bounds",
-            )
-
-            self.__init__(self.data)
-            if workspace_index == None:
-                workspace_index = self.getBestCombinationIndex()
-            if workspace_index != None:
-                if self.zeroSignalsFlag[workspace_index] == True:
-                    logger.warning("Workspace number %d has zero signals" % workspace_index)
-                    return None
-                else:
-                    workspace = self.updateWorkspace(workspace_index, expected=expected)
-            else:
-                return None
-            # Same modifiers_settings as those used when running the 'onnx cls' command line
-            msettings = {"normsys": {"interpcode": "code4"}, "histosys": {"interpcode": "code4p"}}
-            model = workspace.model(modifier_settings=msettings)
-            # obs = workspace.data(model)
-            self.getSigmaMu(workspace)
-            try:
-                bounds = model.config.suggested_bounds()
-                if allowNegativeSignals:
-                    bounds[model.config.poi_index] = (-5., 10. )
-                muhat, maxNllh = onnx.infer.mle.fit(workspace.data(model), model,
-                        return_fitted_val=True, par_bounds = bounds )
-                if False: # get sigma_mu from hessian
-                    onnx.set_backend(onnx.tensorlib, 'minuit')
-                    muhat, maxNllh,o = onnx.infer.mle.fit(workspace.data(model), model,
-                            return_fitted_val=True, par_bounds = bounds,
-                            return_result_obj = True )
-                    sigma_mu = float ( np.sqrt ( o.hess_inv[0][0] ) ) * self.scale
-                    # print ( f"\n>>> sigma_mu from hessian {sigma_mu:.2f}" )
-                    onnx.set_backend(onnx.tensorlib, 'scipy')
-
-                muhat = muhat[model.config.poi_index]*self.scale
-
-            except (onnx.exceptions.FailedMinimization, ValueError) as e:
-                logger.error(f"onnx mle.fit failed {e}")
-                muhat, maxNllh = float("nan"), float("nan")
-            self.muhat = muhat
-            try:
-                ret = maxNllh.tolist()
-            except:
-                ret = maxNllh
-            try:
-                ret = float(ret)
-            except:
-                ret = float(ret[0])
-            self.data.cached_lmaxes[workspace_index] = ret
-            ret = self.exponentiateNLL(ret, not nll)
-            return ret
-
-    def updateWorkspace(self, workspace_index=None, expected=False):
-        """
-        Small method used to return the appropriate workspace
-
-        :param workspace_index: the index of the workspace to retrieve from the corresponding list
-        :param expected: if False, retuns the unmodified (but patched) workspace. Used for computing observed or aposteriori expected limits.
-                        if True, retuns the modified (and patched) workspace, where obs = sum(bkg). Used for computing apriori expected limit.
-        """
-        if self.nWS == 1:
-            if expected == True:
-                return self.workspaces_expected[0]
-            else:
-                return self.workspaces[0]
-        else:
-            if workspace_index == None:
-                logger.error("No workspace index was provided.")
-            if expected == True:
-                return self.workspaces_expected[workspace_index]
-            else:
-                return self.workspaces[workspace_index]
+        return 1.
 
     def getUpperLimitOnSigmaTimesEff(self, expected=False ):
         """

@@ -348,7 +348,6 @@ class TheoryPrediction(object):
         attributes (chi2 being phased out).
         :param expected: computed expected quantities, not observed
         """
-        print ( "here", self.dataType() )
         if not "lmax" in self.cachedObjs[expected]:
             self.cachedObjs[expected]["lmax"] = {}
             self.cachedObjs[expected]["muhat"] = {}

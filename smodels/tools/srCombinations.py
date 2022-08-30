@@ -147,7 +147,7 @@ def getCombinedOnnxStatistics(
             pass
         sigma_mu = ulcomputer.sigma_mu
         from smodels.tools.onnxInterface import getOnnxComputer
-        ulcomputer = getOnnxComputer(dataset, [0.0] * len(nsig), False)
+        ulcomputer = getOnnxComputer(dataset, [0.0] * len(nsig) )
         lsm = ulcomputer.likelihood(mu=0.0, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
 

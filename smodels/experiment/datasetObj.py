@@ -507,6 +507,8 @@ class CombinedDataSet(object):
             self.type = "simplified"
         if hasattr(self.globalInfo, "jsonFiles"):
             self.type = "pyhf"
+        if hasattr(self.globalInfo, "onnxFiles"):
+            self.type = "onnx"
 
     def __str__(self):
         ret = "Combined Dataset (%i datasets)" % len(self._datasets)

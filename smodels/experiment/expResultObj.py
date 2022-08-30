@@ -173,6 +173,8 @@ class ExpResult(object):
     def hasJsonFile( self ):
         return hasattr(self.globalInfo, "jsonFiles")
 
+    def hasOnnxFile( self ):
+        return hasattr(self.globalInfo, "onnxFiles")
 
     """ this feature is not yet ready
     def isUncorrelatedWith ( self, other ):

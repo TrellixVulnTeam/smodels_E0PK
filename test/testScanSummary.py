@@ -14,7 +14,7 @@ sys.path.insert(0, "../")
 import os
 import unittest
 from unitTestHelpers import compareScanSummary, runMain
-
+from smodels.tools.smodelsLogging import logger
 
 class ScanSummaryTest(unittest.TestCase):
 
@@ -24,8 +24,10 @@ class ScanSummaryTest(unittest.TestCase):
         runMain(dirname, inifile="testParameters.ini")
         outSummary = os.path.join(out, 'summary.txt')
         outDefault = 'summary_scan_default.txt'
-
-        self.assertTrue(compareScanSummary(outSummary, outDefault, allowedDiff=0.05))
+        ret = compareScanSummary(outSummary, outDefault, allowedDiff=0.05)
+        if not ret:
+            logger.error ( f"error: {outDefault} differs from {outSummary}" )
+        self.assertTrue( ret )
 
     def testSLHASummary(self):
         out = "./unitTestOutput"

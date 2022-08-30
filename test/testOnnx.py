@@ -37,7 +37,7 @@ class OnnxTest(unittest.TestCase):
         db = Database ( "./database_onnx/" )
         expRes = db.getExpResults ( analysisIDs = [ "ATLAS-SUSY-2018-04" ],
                                 dataTypes = "efficiencyMap" )
-        filename = "./testFiles/slha/TStauStau.slha"
+        filename = "./testFiles/slha_onnx/TStauStau.slha"
         model = Model(BSMList, SMList)
         model.updateParticles(filename)
         smstoplist = decomposer.decompose(model, sigmacut=0)

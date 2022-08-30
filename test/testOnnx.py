@@ -25,6 +25,7 @@ class OnnxTest(unittest.TestCase):
         self.assertAlmostEqual ( llhd, 1.306750516840411e-23, 3 )
         nll = computer.likelihood ( mu = 1., nll = True )
         self.assertAlmostEqual ( nll, 105.38382720947266, 3 )
+        computer.destroy()
 
     def testOnnx ( self ):
         from smodels.experiment.databaseObj import Database

@@ -29,19 +29,7 @@ def getOnnxComputer(dataset, nsig ):
     :returns: onnx upper limit computer, and combinations of signal regions
     """
     from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
-    keys = list ( dataset.globalInfo.onnxFiles.keys() )
-    if len(keys)>1:
-        logger.error ( "I have not yet implemented more than a single onnx file" )
-        import sys
-        sys.exit(-1)
-    # oxf = dataset.globalInfo.onnxFiles [ keys[0] ]
-    fname = "/tmp/test.onnx"
-    with open ( fname, "wb" ) as f:
-        f.write ( dataset.globalInfo.onnx[0] )
-        f.close()
-    import onnxruntime
-    oxsession = onnxruntime.InferenceSession( fname )
-    data = OnnxData(nsig, oxsession, fname )
+    data = OnnxData(nsig, dataset.globalInfo.onnx[0] )
     ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
     return ulcomputer
 
@@ -54,14 +42,28 @@ class OnnxData:
     :ivar onnxFiles: optional list of json files, mostly for debugging
     """
 
-    def __init__(self, nsignals, inputOnnx, onnxFiles=None ):
+    def __init__(self, nsignals : list, inputOnnx ):
         self.nsignals = nsignals  # fb
         self.inputOnnx = inputOnnx
+        self.fname = None
+        if type(inputOnnx) == bytes:
+            import tempfile
+            self.fname = tempfile.mktemp ( suffix=".onnx" )
+            with open ( self.fname, "wb" ) as f:
+                f.write ( inputOnnx )
+                f.close()
+            import onnxruntime
+            oxsession = onnxruntime.InferenceSession( self.fname )
+            self.inputOnnx = oxsession
         self.cached_likelihoods = {}  ## cache of likelihoods (actually twice_nlls)
         self.cached_lmaxes = {}  # cache of lmaxes (actually twice_nlls)
         self.cachedULs = {False: {}, True: {}, "posteriori": {}}
-        self.onnxFiles = onnxFiles
         self.combinations = None
+
+    def destroy ( self ):
+        if self.fname != None:
+            import os
+            os.unlink ( self.fname )
 
     def totalYield ( self ):
         """ the total yield in all signal regions """
@@ -170,6 +172,9 @@ class OnnxUpperLimitComputer:
         """
         return -1.
 
+    def destroy ( self ):
+        self.data.destroy()
+
 if __name__ == "__main__":
     oxfile = "../../test/database_onnx/13TeV/ATLAS/ATLAS-SUSY-2018-04-eff/model.onnx"
     yields = [[ 15., 15. ]]
@@ -177,3 +182,4 @@ if __name__ == "__main__":
     oxdata = OnnxData ( yields, oxsession, oxfile )
     computer = OnnxUpperLimitComputer ( oxdata )
     print ( "likelihood", computer.likelihood ( mu = 1. ) )
+    computer.destroy()

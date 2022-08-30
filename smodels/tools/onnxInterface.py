@@ -86,9 +86,7 @@ class OnnxUpperLimitComputer:
         inp = [ self.data.nsignals ]
         ort_outs = self.data.inputOnnx.run(None, { "dense_input": inp } )
         ret = float ( ort_outs[0][0][0] ) # nll
-        if nll: # return nll
-            return ret
-        return self.exponentiateNLL ( ret, doIt=True )
+        return self.exponentiateNLL ( ret, doIt=not nll )
 
     def chi2(self):
         """
@@ -98,17 +96,17 @@ class OnnxUpperLimitComputer:
             self.lmax(nll=True) - self.likelihood(nll=True)
         )
 
-    def exponentiateNLL(self, twice_nll, doIt):
+    def exponentiateNLL(self, nll : float, doIt : bool ):
         """if doIt, then compute likelihood from nll,
         else return nll"""
-        if twice_nll == None:
+        if nll == None:
             return None
             #if doIt:
             #    return 0.0
             #return 9000.0
         if doIt:
-            return np.exp(-twice_nll / 2.0)
-        return twice_nll / 2.0
+            return np.exp(- nll )
+        return nll
 
     def getSigmaMu(self ):
         """given a workspace, compute a rough estimate of sigma_mu,

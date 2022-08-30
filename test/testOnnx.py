@@ -48,11 +48,12 @@ class OnnxTest(unittest.TestCase):
         prediction = predictions[0]
         pred_signal_strength = prediction.xsection.value
         prediction.computeStatistics()
-        llhd = prediction.likelihood()
-        # for pyhf i get 3.5292233396179906e-44
-        self.assertAlmostEqual ( llhd, 1.869864907903324e-22, 3 )
         nll = prediction.likelihood( nll = True )
-        self.assertAlmostEqual ( nll, 50.031005859375, 3 )
+        # for pyhf that would be 100.0526662621055
+        self.assertAlmostEqual ( nll, 100.06201171875, 3 )
+        llhd = prediction.likelihood()
+        # for pyhf i get exp(-2?*nll) = 3.5292233396179906e-44
+        self.assertAlmostEqual ( llhd, 1.869864907903324e-22, 3 )
 
 if __name__ == "__main__":
     unittest.main()

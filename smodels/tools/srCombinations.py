@@ -63,7 +63,6 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         ulcomputer = getOnnxComputer(dataset, nsig)
         ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
-        ulcomputer.destroy()
         return ret
     elif dataset.type == "pyhf":
         logger.debug("Using pyhf")
@@ -148,10 +147,8 @@ def getCombinedOnnxStatistics(
             pass
         sigma_mu = ulcomputer.sigma_mu
         from smodels.tools.onnxInterface import getOnnxComputer
-        ulcomputer.destroy()
         ulcomputer = getOnnxComputer(dataset, [0.0] * len(nsig) )
         lsm = ulcomputer.likelihood(mu=0.0, expected=expected)
-        ulcomputer.destroy()
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
 
 

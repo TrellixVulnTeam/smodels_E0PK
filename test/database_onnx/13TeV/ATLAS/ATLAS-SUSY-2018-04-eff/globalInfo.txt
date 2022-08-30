@@ -9,7 +9,7 @@ private: False
 implementedBy: Wolfgang Waltenberger
 lastUpdate: 2020/1/26
 datasetOrder: "SRlow", "SRhigh"
-jsonFiles: {"SRcombined.json": ["SRlow", "SRhigh"]}
+# jsonFiles: {"SRcombined.json": ["SRlow", "SRhigh"]}
 onnxFiles: { "model.onnx": [ "SRlow", "SRhigh" ] }
 # jsonFiles: {"simplified.json": ["SRlow", "SRhigh"]}
 # includeCRs: True

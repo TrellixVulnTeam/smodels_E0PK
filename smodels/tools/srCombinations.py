@@ -63,6 +63,15 @@ def getCombinedUpperLimitFor(dataset, nsig, expected=False, deltas_rel=0.2):
         ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
         logger.debug("pyhf upper limit : {}".format(ret))
         return ret
+    elif dataset.type == "onnx":
+        logger.debug("Using onnx")
+        if all([s == 0 for s in nsig]):
+            logger.warning("All signals are empty")
+            return None
+        ulcomputer = _getOnnxComputer(dataset, nsig)
+        ret = ulcomputer.getUpperLimitOnSigmaTimesEff(expected=expected)
+        logger.debug("pyhf upper limit : {}".format(ret))
+        return ret
     else:
         logger.error(
             "no covariance matrix or json file given in globalInfo.txt for %s"
@@ -96,7 +105,7 @@ def getCombinedLikelihood(
     return lbsm
 
 def getCombinedPyhfStatistics(
-    dataset, nsig, marginalize, deltas_rel, nll=False, expected=False, allowNegativeSignals=False
+    dataset, nsig, marginalize, deltas_rel, expected=False, allowNegativeSignals=False
 ):
         # Getting the path to the json files
         # Loading the jsonFiles
@@ -116,6 +125,26 @@ def getCombinedPyhfStatistics(
         lsm = ulcomputer.likelihood(mu=0.0, workspace_index=index, expected=expected)
         return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
 
+def getCombinedOnnxStatistics(
+    dataset, nsig, marginalize, deltas_rel, expected=False, allowNegativeSignals=False
+):
+        # Getting the path to the json files
+        # Loading the jsonFiles
+        ulcomputer = _getOnnxComputer(dataset, nsig)
+        lbsm = ulcomputer.likelihood(mu=1.0, expected=expected)
+        lmax = ulcomputer.lmax( expected=expected, allowNegativeSignals=allowNegativeSignals
+        )
+        muhat = None
+        try:
+            muhat = float(ulcomputer.muhat)
+        except AttributeError:
+            pass
+        sigma_mu = ulcomputer.sigma_mu
+        ulcomputer = _getOnnxComputer(dataset, [0.0] * len(nsig), False)
+        lsm = ulcomputer.likelihood(mu=0.0, expected=expected)
+        return {"lbsm": lbsm, "lmax": lmax, "lsm": lsm, "muhat": muhat, "sigma_mu": sigma_mu}
+
+
 def getCombinedStatistics(
     dataset, nsig, marginalize=False, deltas_rel=0.2, expected=False, allowNegativeSignals=False
 ):
@@ -126,11 +155,25 @@ def getCombinedStatistics(
     """
     if dataset.type == "pyhf":
         return getCombinedPyhfStatistics ( dataset, nsig, marginalize, deltas_rel,
-            deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals)
+            expected=expected, allowNegativeSignals=allowNegativeSignals)
+    if dataset.type == "onnx":
+        return getCombinedOnnxStatistics ( dataset, nsig, marginalize, deltas_rel,
+            expected=expected, allowNegativeSignals=allowNegativeSignals)
     cslm = getCombinedSimplifiedStatistics( dataset, nsig, marginalize,
         deltas_rel, expected=expected, allowNegativeSignals=allowNegativeSignals,
     )
     return cslm
+
+def _getOnnxComputer(dataset, nsig ):
+    """create the onnx ul computer object
+    :returns: onnx upper limit computer, and combinations of signal regions
+    """
+    from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
+
+    data = OnnxData(nsig, dataset.globalInfo.onnxFile )
+    ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
+    return ulcomputer
+
 
 def _getPyhfComputer(dataset, nsig, normalize=True):
     """create the pyhf ul computer object

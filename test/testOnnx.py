@@ -52,8 +52,8 @@ class OnnxTest(unittest.TestCase):
         # for pyhf that would be 100.0526662621055
         self.assertAlmostEqual ( nll, 100.06201171875, 3 )
         llhd = prediction.likelihood()
-        # for pyhf i get exp(-2?*nll) = 3.5292233396179906e-44
-        self.assertAlmostEqual ( llhd, 1.869864907903324e-22, 3 )
+        # for pyhf i get exp(-nll) = 3.5292233396179906e-44
+        self.assertAlmostEqual ( llhd / 3.4963947738083063e-44, 1., 3 )
 
 if __name__ == "__main__":
     unittest.main()

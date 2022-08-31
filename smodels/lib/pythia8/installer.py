@@ -2,7 +2,7 @@
 
 """ the installer script, fetches pythia8, explodes the tarball, compiles. """
 
-import os, sys, shutil
+import os, sys, shutil, subprocess
 
 def getVersion():
     """ obtain the pythia version we wish to use, stored in file 'pythiaversion' """
@@ -70,6 +70,12 @@ def unzip():
     print ( f"[installer.py] extracting to pythia{ver}" )
     with tarfile.open( tarball, 'r:gz') as f:
         f.extractall()
+    print ( f"[installer.py] protecting some folders" )
+    cmd = f"chmod 444 pythia{ver}/share/Pythia8/xmldoc/*.xml"
+    o = subprocess.getoutput ( cmd )
+    for d in [ "share/Pythia8/xmldoc/", "include/Pythia8/" ]:
+        cmd = f"chmod 500 pythia{ver}/{d}"
+        o = subprocess.getoutput ( cmd )
 
 def getNCPUs():
     """ get the number of CPUs to compile pythia8 with """
@@ -99,6 +105,8 @@ def rmPythiaFolder():
     path = f"pythia{ver}"
     if not os.path.exists ( path ):
         return
+    cmd = f"chmod -R 777 {path}"
+    subprocess.getoutput ( cmd )
     shutil.rmtree ( path )
 
 def checkPythiaHeaderFile():

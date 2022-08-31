@@ -113,12 +113,13 @@ def checkPythiaHeaderFile():
     """ check if pythia header file is there """
     ver = getVersion()
     path = f"pythia{ver}"
-    afile = f"{path}/include/Pythia8/Pythia.h"
-    if not os.path.exists ( afile ):
-        return False
-    size = os.stat ( afile ).st_size
-    if size < 10000:
-        return False
+    afiles = [ f"{path}/include/Pythia8/Pythia.h", f"{path}/share/Pythia8/xmldoc/Index.xml" ]
+    for afile in afiles:
+        if not os.path.exists ( afile ):
+            return False
+        size = os.stat ( afile ).st_size
+        if size < 10000:
+            return False
     return True
 
 def compilePythia():

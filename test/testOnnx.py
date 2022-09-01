@@ -13,19 +13,19 @@ sys.path.insert(0,"../")
 import unittest
 
 class OnnxTest(unittest.TestCase):
-    def mestDirectly ( self ):
+    def testDirectly ( self ):
         oxfile = "./database_onnx/13TeV/ATLAS/ATLAS-SUSY-2018-04-eff/model.onnx"
-        yields = [[ 15., 15. ]]
+        yields = [ 15., 15. ]
         import onnxruntime
         from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
-        oxsession = onnxruntime.InferenceSession( oxfile )
-        oxdata = OnnxData ( yields, oxsession, oxfile )
-        computer = OnnxUpperLimitComputer ( oxdata )
-        llhd = computer.likelihood ( mu = 1. )
-        self.assertAlmostEqual ( llhd, 1.306750516840411e-23, 3 )
-        nll = computer.likelihood ( mu = 1., nll = True )
-        self.assertAlmostEqual ( nll, 105.38382720947266, 3 )
-        computer.destroy()
+        with open ( oxfile, "rb" ) as f:
+            blob = f.read()
+            oxdata = OnnxData ( yields, blob )
+            computer = OnnxUpperLimitComputer ( oxdata )
+            llhd = computer.likelihood ( mu = 1. )
+            self.assertAlmostEqual ( llhd, 1.306750516840411e-23, 3 )
+            nll = computer.likelihood ( mu = 1., nll = True )
+            self.assertAlmostEqual ( nll, 105.38382720947266, 3 )
 
     def testOnnx ( self ):
         from smodels.experiment.databaseObj import Database

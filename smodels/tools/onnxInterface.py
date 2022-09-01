@@ -82,8 +82,8 @@ class OnnxUpperLimitComputer:
             compute a priori expected, if "posteriori" compute posteriori
             expected
         """
-        # FIXME implemented expectation values
         inp = [ self.data.nsignals ]
+        # FIXME implement expectation values
         ort_outs = self.data.inputOnnx.run(None, { "dense_input": inp } )
         ret = float ( ort_outs[0][0][0] ) # nll
         return self.exponentiateNLL ( ret, doIt=not nll )
@@ -160,8 +160,9 @@ class OnnxUpperLimitComputer:
 
 if __name__ == "__main__":
     oxfile = "../../test/database_onnx/13TeV/ATLAS/ATLAS-SUSY-2018-04-eff/model.onnx"
-    yields = [[ 15., 15. ]]
-    oxsession = onnxruntime.InferenceSession( oxfile )
-    oxdata = OnnxData ( yields, oxsession, oxfile )
-    computer = OnnxUpperLimitComputer ( oxdata )
-    print ( "likelihood", computer.likelihood ( mu = 1. ) )
+    yields = [ 15., 15. ]
+    with open ( oxfile, "rb" ) as f:
+        blob = f.read()
+        oxdata = OnnxData ( yields, blob )
+        computer = OnnxUpperLimitComputer ( oxdata )
+        print ( "likelihood", computer.likelihood ( mu = 1. ) )

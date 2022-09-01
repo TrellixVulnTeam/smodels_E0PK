@@ -45,9 +45,17 @@ class OnnxData:
     def __init__(self, nsignals : list, inputOnnx ):
         self.nsignals = nsignals  # fb
         self.inputOnnx = inputOnnx
-        if type(inputOnnx) == bytes:
+        if type(inputOnnx) == bytes: # a blob was given
             oxsession = onnxruntime.InferenceSession( inputOnnx )
             self.inputOnnx = oxsession
+        elif type(inputOnnx) == str and inputOnnx.endswith ( ".onnx" ):
+            # we assume this is a filename
+            with open ( inputOnnx, "rb" ) as f:
+                blob = f.read()
+                oxsession = onnxruntime.InferenceSession( inputOnnx )
+                self.inputOnnx = oxsession
+        else:
+            logger.error ( f"inputOnnx is of type {type(inputOnnx)}. Dont know what to do with this." )
         self.cached_likelihoods = {}  ## cache of likelihoods (actually twice_nlls)
         self.cached_lmaxes = {}  # cache of lmaxes (actually twice_nlls)
         self.cachedULs = {False: {}, True: {}, "posteriori": {}}
@@ -84,7 +92,9 @@ class OnnxUpperLimitComputer:
         """
         inp = [ self.data.nsignals ]
         # FIXME implement expectation values
-        ort_outs = self.data.inputOnnx.run(None, { "dense_input": inp } )
+        # inpname = "dense_input"
+        inpname = self.data.inputOnnx.get_inputs()[0].name
+        ort_outs = self.data.inputOnnx.run(None, { inpname: inp } )
         ret = float ( ort_outs[0][0][0] ) # nll
         return self.exponentiateNLL ( ret, doIt=not nll )
 

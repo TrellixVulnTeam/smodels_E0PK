@@ -94,13 +94,16 @@ class OnnxUpperLimitComputer:
             expected
         """
         if type ( self.data ) in [ list ]:
-            logger.error ( "likelihood requested for multi-super-region result. fixme implement the poor man's combination based on expected upper limits for this, for now i just take the first super region" )
-            n = self.data[0].inferenceSession.get_inputs()[0].shape
-            inp = [ x.nsignals[:n ] ]
-            inpname = self.data[0].inferenceSession.get_inputs()[0].name
-            ort_outs = self.data[0].inferenceSession.run(None, { inpname: inp } )
+            if len(self.data)>1:
+                logger.error ( "likelihood requested for multi-super-region result. fixme implement the poor man's combination based on expected upper limits for this, for now i just take the first super region" )
+            idx = 0
+            offset = 0 # offset in signal regions
+            n = self.data[idx].inferenceSession.get_inputs()[0].shape[1]
+            inp = [ self.data[idx].nsignals[:n] ]
+            inpname = self.data[idx].inferenceSession.get_inputs()[0].name
+            ort_outs = self.data[idx].inferenceSession.run(None, { inpname: inp } )
             ret = float ( ort_outs[0][0][0] ) # nll
-            return self.exponentiateNLL ( nl, doIt=not nll )
+            return self.exponentiateNLL ( ret, doIt=not nll )
             """
             offset = 0
             ret = []

@@ -68,8 +68,9 @@ class OnnxTest(unittest.TestCase):
         # for pyhf i get exp(-nll) = 3.5292233396179906e-44
         self.assertAlmostEqual ( llhd / 3.4963947738083063e-44, 1., 3 )
 
-    def mest201831 ( self ):
+    def test201831 ( self ):
         """ test the model of ATLAS-SUSY-2018-31 """
+        ## FIXME not yet checking poor mans combination of super regions
         from smodels.experiment.databaseObj import Database
         from smodels.theory.model import Model
         from smodels.share.models.SMparticles import SMList

@@ -29,7 +29,9 @@ def getOnnxComputer(dataset, nsig ):
     :returns: onnx upper limit computer, and combinations of signal regions
     """
     from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
-    data = OnnxData(nsig, dataset.globalInfo.onnx[0] )
+
+    data = [ OnnxData(nsig, x ) for \
+             x in dataset.globalInfo.onnx ]
     ulcomputer = OnnxUpperLimitComputer(data, lumi=dataset.getLumi() )
     return ulcomputer
 
@@ -38,24 +40,25 @@ class OnnxData:
     Holds data for use in onnx
     :ivar nsignals: signal predictions list divided into sublists, 
                     one for each onnx file
-    :ivar inputOnnx: list of onnx instances
+    :ivar inferenceSession: list of onnx instances
     :ivar onnxFiles: optional list of json files, mostly for debugging
     """
 
-    def __init__(self, nsignals : list, inputOnnx ):
+    def __init__(self, nsignals : list, inferenceSession ):
         self.nsignals = nsignals  # fb
-        self.inputOnnx = inputOnnx
-        if type(inputOnnx) == bytes: # a blob was given
-            oxsession = onnxruntime.InferenceSession( inputOnnx )
-            self.inputOnnx = oxsession
-        elif type(inputOnnx) == str and inputOnnx.endswith ( ".onnx" ):
+        if type(inferenceSession) == bytes: # a blob was given
+            oxsession = onnxruntime.InferenceSession( inferenceSession )
+            self.inferenceSession = oxsession
+        elif type(inferenceSession) == str and inferenceSession.endswith ( ".onnx" ):
             # we assume this is a filename
-            with open ( inputOnnx, "rb" ) as f:
+            with open ( inferenceSession, "rb" ) as f:
                 blob = f.read()
-                oxsession = onnxruntime.InferenceSession( inputOnnx )
-                self.inputOnnx = oxsession
+                oxsession = onnxruntime.InferenceSession( inferenceSession )
+                self.inferenceSession = oxsession
+        elif type(inferenceSession ) == type ( onnxruntime.InferenceSession ):
+            self.inferenceSession = inferenceSession
         else:
-            logger.error ( f"inputOnnx is of type {type(inputOnnx)}. Dont know what to do with this." )
+            logger.error ( f"inferenceSession is of type {type(inferenceSession)}. Dont know what to do with this." )
         self.cached_likelihoods = {}  ## cache of likelihoods (actually twice_nlls)
         self.cached_lmaxes = {}  # cache of lmaxes (actually twice_nlls)
         self.cachedULs = {False: {}, True: {}, "posteriori": {}}
@@ -90,11 +93,33 @@ class OnnxUpperLimitComputer:
             compute a priori expected, if "posteriori" compute posteriori
             expected
         """
+        if type ( self.data ) in [ list ]:
+            logger.error ( "likelihood requested for multi-super-region result. fixme implement the poor man's combination based on expected upper limits for this, for now i just take the first super region" )
+            n = self.data[0].inferenceSession.get_inputs()[0].shape
+            inp = [ x.nsignals[:n ] ]
+            inpname = self.data[0].inferenceSession.get_inputs()[0].name
+            ort_outs = self.data[0].inferenceSession.run(None, { inpname: inp } )
+            ret = float ( ort_outs[0][0][0] ) # nll
+            return self.exponentiateNLL ( nl, doIt=not nll )
+            """
+            offset = 0
+            ret = []
+            for i,x in enumerate ( self.data ):
+                ## number of SRs in this batch
+                n = x.inferenceSession.get_inputs()[0].shape[1]
+                inp = [ x.nsignals[offset:offset+n ] ]
+                inpname = x.inferenceSession.get_inputs()[0].name
+                ort_outs = x.inferenceSession.run(None, { inpname: inp } )
+                nl = float ( ort_outs[0][0][0] ) # nll
+                ret.append ( self.exponentiateNLL ( nl, doIt=not nll ) )
+                offset += n
+            return ret
+            """
         inp = [ self.data.nsignals ]
         # FIXME implement expectation values
         # inpname = "dense_input"
-        inpname = self.data.inputOnnx.get_inputs()[0].name
-        ort_outs = self.data.inputOnnx.run(None, { inpname: inp } )
+        inpname = self.data.inferenceSession.get_inputs()[0].name
+        ort_outs = self.data.inferenceSession.run(None, { inpname: inp } )
         ret = float ( ort_outs[0][0][0] ) # nll
         return self.exponentiateNLL ( ret, doIt=not nll )
 
@@ -152,6 +177,9 @@ class OnnxUpperLimitComputer:
         if self.lumi is None:
             logger.error(f"asked for upper limit on fiducial xsec, but no lumi given with the data")
             return ul
+        if type ( self.data ) in [ list ]:
+            uls = [ ul * x.totalYield() / self.lumi for x in self.data ]
+            return uls
         xsec = self.data.totalYield() / self.lumi
         return ul * xsec
 

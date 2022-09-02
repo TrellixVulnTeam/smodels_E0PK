@@ -20,7 +20,7 @@ from smodels.theory.theoryPrediction import theoryPredictionsFor
 from smodels.tools.onnxInterface import OnnxData, OnnxUpperLimitComputer
 
 class OnnxTest(unittest.TestCase):
-    def testDirectly ( self ):
+    def mestDirectly ( self ):
         """ compute the likelihood directly, not via txnames """
         oxfile = "./database_onnx/13TeV/ATLAS/ATLAS-SUSY-2018-04-eff/model.onnx"
         yields = [ 15., 15. ]
@@ -31,7 +31,7 @@ class OnnxTest(unittest.TestCase):
         nll = computer.likelihood ( mu = 1., nll = True )
         self.assertAlmostEqual ( nll, 105.38382720947266, 3 )
 
-    def testDirectly1831 ( self ):
+    def mestDirectly1831 ( self ):
         """ compute the likelihood directly, not via txnames """
         oxfile = "./database_onnx/13TeV/ATLAS/ATLAS-SUSY-2018-31-eff/modelA.onnx"
         yields = [ 15., 15., 15. ]
@@ -44,7 +44,7 @@ class OnnxTest(unittest.TestCase):
 
     def test201804 ( self ):
         """ test the model of ATLAS-SUSY-2018-04 """
-        db = Database ( "./database_onnx/", force_load = None )
+        db = Database ( "./database_onnx/", force_load = "txt" )
         expRes = db.getExpResults ( analysisIDs = [ "ATLAS-SUSY-2018-04" ],
                                     dataTypes = "efficiencyMap" )
         filename = "./testFiles/slha_onnx/TStauStau.slha"
@@ -64,7 +64,7 @@ class OnnxTest(unittest.TestCase):
         # for pyhf i get exp(-nll) = 3.5292233396179906e-44
         self.assertAlmostEqual ( llhd / 3.4963947738083063e-44, 1., 3 )
 
-    def test201831 ( self ):
+    def mest201831 ( self ):
         """ test the model of ATLAS-SUSY-2018-31 """
         ## FIXME not yet checking poor mans combination of super regions
         db = Database ( "./database_onnx/", force_load = "txt" )
@@ -87,7 +87,7 @@ class OnnxTest(unittest.TestCase):
         # for pyhf i get exp(-nll) = 1.6828172419917045e-11
         self.assertAlmostEqual ( llhd / 1.6828172419917045e-11, 1., 3 )
 
-    def test201908 ( self ):
+    def mest201908 ( self ):
         """ test the model of ATLAS-SUSY-2019-08 """
         ## FIXME not yet checking poor mans combination of super regions
 

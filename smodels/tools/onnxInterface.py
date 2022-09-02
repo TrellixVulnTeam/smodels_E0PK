@@ -53,7 +53,7 @@ class OnnxData:
             # we assume this is a filename
             with open ( inferenceSession, "rb" ) as f:
                 blob = f.read()
-                oxsession = onnxruntime.InferenceSession( inferenceSession )
+                oxsession = onnxruntime.InferenceSession( blob )
                 self.inferenceSession = oxsession
         elif type(inferenceSession ) == type ( onnxruntime.InferenceSession ):
             self.inferenceSession = inferenceSession

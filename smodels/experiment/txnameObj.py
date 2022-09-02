@@ -56,6 +56,10 @@ class TxName(object):
         self.intermediateState = None #default intermediate state
 
         logger.debug('Creating object based on txname file: %s' %self.path)
+        onnxfile = path.replace ( ".txt", ".onnx" )
+        hasOnnx = os.path.exists ( onnxfile )
+        if hasOnnx:
+            print ( "path", path, "has also an onnx file!" )
         #Open the info file and get the information:
         if not os.path.isfile(path):
             logger.error("Txname file %s not found" % path)
@@ -101,7 +105,12 @@ class TxName(object):
         self.Leff_inner = self.fetchAttribute('Leff_inner',fillvalue=None)
         self.Leff_outer = self.fetchAttribute('Leff_outer',fillvalue=None)
 
-        self.txnameData = TxNameData(data, dataType, ident,
+        if hasOnnx:
+            self.txnameData = TxNameDataOnnx( onnxfile, dataType, ident,
+                                        Leff_inner=self.Leff_inner,
+                                        Leff_outer=self.Leff_outer)
+        else:
+            self.txnameData = TxNameData(data, dataType, ident,
                                         Leff_inner=self.Leff_inner,
                                         Leff_outer=self.Leff_outer)
         if expectedData:
@@ -386,9 +395,177 @@ class TxName(object):
 
         return eff
 
+class TxNameDataOnnx(object):
+    """
+    Holds the onnx model for the Txname object, currently effiencies only
+    """
+
+    def __init__(self,onnxfile,dataType,Id,
+                    accept_errors_upto=.05,
+                    Leff_inner=None,Leff_outer=None):
+        """
+        :param model: the onnx model
+        :param dataType: the dataType (upperLimit or efficiencyMap)
+        :param Id: an identifier, must be unique for each TxNameData!
+        :param _accept_errors_upto: If None, do not allow extrapolations outside of
+                convex hull.  If float value given, allow that much relative
+                uncertainty on the upper limit / efficiency
+                when extrapolating outside convex hull.
+                This method can be used to loosen the equal branches assumption.
+        :param Leff_inner: is the effective inner radius of the detector, given in meters (used for reweighting prompt decays). If None, default values will be used.
+        :param Leff_outer: is the effective outer radius of the detector, given in meters (used for reweighting decays outside the detector). If None, default values will be used.
+
+
+        """
+        self.dataType = dataType
+        self._id = Id
+        self._accept_errors_upto=accept_errors_upto
+        self.Leff_inner = Leff_inner
+        self.Leff_outer = Leff_outer
+        self._V = None
+
+        if self.dataType == 'efficiencyMap':
+            self.reweightF = defaultEffReweight
+        elif self.dataType == 'upperLimit':
+            self.reweightF = defaultULReweight
+        else:
+            raise SModelSError("Default reweighting function not defined for data type %s" %self.dataType)
+        with open ( onnxfile, "rb" ) as f:
+            self.blob = f.read()
+            f.close()
+
+    def __str__ ( self ):
+        """ a simple unique string identifier, mostly for _memoize """
+        return str ( self._id ) + " (onnx)"
+
+    def round_to_n(self, x, n):
+        if x==0.0:
+            return x
+        return round(x, int(-np.sign(x)* int(floor(log10(abs(x)))) + (n - 1)))
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __eq__ ( self, other ):
+        if type(self) != type(other):
+            return False
+        return self._id == other._id
+
+    def onlyZeroValues ( self ):
+        """ we assume onnx models always have non-zero values also """
+        return False
+
+    def getValueFor ( self, element ):
+        print ( "get value for", element )
+        import onnxruntime
+        oxsession = onnxruntime.InferenceSession( self.blob )
+        print ( "inputs", oxsession.get_inputs()[0] )
+        print ( "inputs", oxsession.get_inputs()[0].shape )
+        inpname = oxsession.get_inputs()[0].name
+        inp = [ [ 500., 200., 500., 200. ] ]
+        ort_outs = oxsession.run(None, { inpname: inp } )
+        out = ort_outs[0][0][0]
+        ret = float ( np.exp ( out ) )
+        return ret
+
+class Delaunay1D:
+    """
+    Uses a 1D data array to interpolate the data.
+    The attribute simplices is a list of N-1 pair of ints with the indices of the points
+    forming the simplices (e.g. [[0,1],[1,2],[3,4],...]).
+    """
+
+    def __init__(self,data):
+
+        self.points = None
+        self.simplices = None
+        self.transform = None
+        if data and self.checkData(data):
+            self.points = sorted(data)
+            #Create simplices as the point intervals (using the sorted data)
+            self.simplices = np.array([[data.index(self.points[i+1]),data.index(pt)]
+                                       for i,pt in enumerate(self.points[:-1])])
+            transform = []
+            #Create trivial transformation to the baryocentric coordinates:
+            for simplex in self.simplices:
+                xmax,xmin = data[simplex[0]][0],data[simplex[1]][0]
+                transform.append([[1./(xmax-xmin)],[xmin]])
+            self.transform = np.array(transform)
+
+            #Store convex hull (first and last point):
+            self.convex_hull = np.array([data.index(self.points[0]),data.index(self.points[-1])])
+
+        else:
+            raise SModelSError()
+
+    def find_simplex(self,x,tol=0.):
+        """
+        Find 1D data interval (simplex) to which x belongs
+
+        :param x: Point (float) without units
+        :param tol: Tolerance. If x is outside the data range with distance < tol, extrapolate.
+
+        :return: simplex index (int)
+        """
+
+        xi = self.find_index(self.points,x)
+        if xi == -1:
+            if abs(x-self.points[0]) < tol:
+                return 0
+            else:
+                return -1
+        elif xi == len(self.simplices):
+            if abs(x-self.points[-1]) < tol:
+                return xi-1
+            else:
+                return -1
+        else:
+            return xi
+
+    def checkData(self,data):
+        """
+        Define the simplices according to data. Compute and store
+        the transformation matrix and simplices self.point.
+        """
+        if not isinstance(data,list):
+            logger.error("Input data for 1D Delaunay should be a list.")
+            return False
+        for pt in data:
+            if (not isinstance(pt,list)) or len(pt) != 1 or (not isinstance(pt[0],float)):
+                logger.error("Input data for 1D Delaunay is in wrong format. It should be [[x1],[x2],..]")
+                return False
+        return True
+
+
+    def find_index(self,xlist, x):
+        """
+        Efficient way to find x in a list.
+        Returns the index (i) of xlist such that xlist[i] < x <= xlist[i+1].
+        If x > max(xlist), returns the length of the list.
+        If x < min(xlist), returns 0.        vertices = np.take(self.tri.simplices, simplex, axis=0)
+        temp = np.take(self.tri.transform, simplex, axis=0)
+        d=temp.shape[2]
+        delta = uvw - temp[:, d]
+
+
+        :param xlist: List of x-type objects
+        :param x: object to be searched for.
+
+        :return: Index of the list such that xlist[i] < x <= xlist[i+1].
+        """
+
+        lo = 0
+        hi = len(xlist)
+        while lo < hi:
+            mid = (lo+hi)//2
+            if xlist[mid] < x: lo = mid+1
+            else: hi = mid
+        return lo-1
+
 class TxNameData(object):
     """
-    Holds the data for the Txname object.  It holds Upper limit values or efficiencies.
+    Holds the data for the Txname object. 
+    It holds Upper limit values or efficiencies.
     """
     _keep_values = False ## keep the original values, only for debugging
 
@@ -1010,100 +1187,6 @@ class TxNameData(object):
             self.tri = Delaunay(MpCut)
         else:
             self.tri = Delaunay1D(MpCut)
-
-class Delaunay1D:
-    """
-    Uses a 1D data array to interpolate the data.
-    The attribute simplices is a list of N-1 pair of ints with the indices of the points
-    forming the simplices (e.g. [[0,1],[1,2],[3,4],...]).
-    """
-
-    def __init__(self,data):
-
-        self.points = None
-        self.simplices = None
-        self.transform = None
-        if data and self.checkData(data):
-            self.points = sorted(data)
-            #Create simplices as the point intervals (using the sorted data)
-            self.simplices = np.array([[data.index(self.points[i+1]),data.index(pt)]
-                                       for i,pt in enumerate(self.points[:-1])])
-            transform = []
-            #Create trivial transformation to the baryocentric coordinates:
-            for simplex in self.simplices:
-                xmax,xmin = data[simplex[0]][0],data[simplex[1]][0]
-                transform.append([[1./(xmax-xmin)],[xmin]])
-            self.transform = np.array(transform)
-
-            #Store convex hull (first and last point):
-            self.convex_hull = np.array([data.index(self.points[0]),data.index(self.points[-1])])
-
-        else:
-            raise SModelSError()
-
-    def find_simplex(self,x,tol=0.):
-        """
-        Find 1D data interval (simplex) to which x belongs
-
-        :param x: Point (float) without units
-        :param tol: Tolerance. If x is outside the data range with distance < tol, extrapolate.
-
-        :return: simplex index (int)
-        """
-
-        xi = self.find_index(self.points,x)
-        if xi == -1:
-            if abs(x-self.points[0]) < tol:
-                return 0
-            else:
-                return -1
-        elif xi == len(self.simplices):
-            if abs(x-self.points[-1]) < tol:
-                return xi-1
-            else:
-                return -1
-        else:
-            return xi
-
-    def checkData(self,data):
-        """
-        Define the simplices according to data. Compute and store
-        the transformation matrix and simplices self.point.
-        """
-        if not isinstance(data,list):
-            logger.error("Input data for 1D Delaunay should be a list.")
-            return False
-        for pt in data:
-            if (not isinstance(pt,list)) or len(pt) != 1 or (not isinstance(pt[0],float)):
-                logger.error("Input data for 1D Delaunay is in wrong format. It should be [[x1],[x2],..]")
-                return False
-        return True
-
-
-    def find_index(self,xlist, x):
-        """
-        Efficient way to find x in a list.
-        Returns the index (i) of xlist such that xlist[i] < x <= xlist[i+1].
-        If x > max(xlist), returns the length of the list.
-        If x < min(xlist), returns 0.        vertices = np.take(self.tri.simplices, simplex, axis=0)
-        temp = np.take(self.tri.transform, simplex, axis=0)
-        d=temp.shape[2]
-        delta = uvw - temp[:, d]
-
-
-        :param xlist: List of x-type objects
-        :param x: object to be searched for.
-
-        :return: Index of the list such that xlist[i] < x <= xlist[i+1].
-        """
-
-        lo = 0
-        hi = len(xlist)
-        while lo < hi:
-            mid = (lo+hi)//2
-            if xlist[mid] < x: lo = mid+1
-            else: hi = mid
-        return lo-1
 
 if __name__ == "__main__":
     import time

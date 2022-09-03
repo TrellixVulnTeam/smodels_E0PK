@@ -462,10 +462,14 @@ class TxNameDataOnnx(object):
         print ( "inputs", oxsession.get_inputs()[0] )
         print ( "inputs", oxsession.get_inputs()[0].shape )
         inpname = oxsession.get_inputs()[0].name
-        inp = [ [ 500., 200., 500., 200. ] ]
+        inp = [ [ 400., 100., 400., 100. ] ]
         ort_outs = oxsession.run(None, { inpname: inp } )
-        out = ort_outs[0][0][0]
-        ret = float ( np.exp ( out ) )
+        print ( "outputs", ort_outs )
+        classifier = float ( ort_outs[0][0][0] )
+        if classifier < 0.5:
+            return None
+        regressor = float ( ort_outs[1][0][0] )
+        ret = float ( np.exp ( regressor ) )
         return ret
 
 class Delaunay1D:
